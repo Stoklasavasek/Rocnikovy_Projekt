@@ -88,6 +88,12 @@ Mapy	flutter_map nebo Google Maps
 
 📸 Přidání fotek a map k událostem
 
+
+####KAHOOT pro skoly (office ucty, Oauth2)
+
+
+
+
 📊 Statistiky účasti a populárních míst
 
 📡 Offline režim a synchronizace
