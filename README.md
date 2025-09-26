@@ -91,6 +91,52 @@ Mapy	flutter_map nebo Google Maps
 
 ####KAHOOT pro skoly (office ucty, Oauth2,wagtail)
 
+Nastavení přihlášení přes Microsoft (Azure AD)
+------------------------------------------------
+
+1) V Azure Portal vytvořte App registration
+- Název: Kahoot pro školu
+- Supported account types: Accounts in this organizational directory only (Single tenant)
+- Redirect URI (web): http://localhost:8000/accounts/microsoft/login/callback/
+
+2) Zkopírujte Client ID a Client Secret a uložte je do prostředí
+
+Mac/Linux (shell):
+```bash
+export MS_CLIENT_ID="<APPLICATION_CLIENT_ID>"
+export MS_CLIENT_SECRET="<CLIENT_SECRET>"
+# volitelné: omezte na svůj tenant
+export MS_TENANT="<YOUR_TENANT_ID>"  # nebo nechte prázdné = "common"
+```
+
+Docker (doporučeno přes .env):
+Vytvořte soubor `.env` vedle `Dockerfile`:
+```env
+MS_CLIENT_ID=<APPLICATION_CLIENT_ID>
+MS_CLIENT_SECRET=<CLIENT_SECRET>
+MS_TENANT=<YOUR_TENANT_ID>
+```
+Pak přidejte načtení proměnných v `docker run` nebo `docker-compose`.
+
+3) Instalace závislostí
+```bash
+pip install -r requirements.txt
+```
+
+4) Migrace a spuštění
+```bash
+python manage.py migrate
+python manage.py runserver
+```
+
+5) Ověření
+- Navštivte /accounts/login/ nebo použijte tlačítko „Přihlásit se přes Microsoft“ v horní liště.
+- Po úspěchu budete přesměrováni na `/`.
+
+Poznámky
+- Přihlašování využívá `django-allauth` a poskytovatele `microsoft`.
+- Přihlašování je povoleno i bez e-mailové verifikace (školní účty mají být ověřeny v Azure AD).
+
 
 
 

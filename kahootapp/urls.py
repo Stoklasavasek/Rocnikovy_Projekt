@@ -7,6 +7,7 @@ from wagtail.documents import urls as wagtaildocs_urls
 from wagtail import urls as wagtail_urls
 
 from search import views as search_views
+from quiz import views as quiz_views
 
 urlpatterns = [
     # Django admin
@@ -23,6 +24,14 @@ urlpatterns = [
 
     # Hledání
     path("search/", search_views.search, name="search"),
+
+    # Kvízy
+    path("quiz/", quiz_views.quiz_list, name="quiz_list"),
+    path("quiz/<int:quiz_id>/start/", quiz_views.quiz_start, name="quiz_start"),
+    path("quiz/join/", quiz_views.join_quiz_by_code, name="quiz_join"),
+    path("quiz/create/", quiz_views.quiz_create, name="quiz_create"),
+    path("quiz/<int:quiz_id>/edit/", quiz_views.quiz_update, name="quiz_update"),
+    path("quiz/<int:quiz_id>/delete/", quiz_views.quiz_delete, name="quiz_delete"),
 ]
 
 if settings.DEBUG:

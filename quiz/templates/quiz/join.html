@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block body_class %}template-quiz-join{% endblock %}
+
+{% block content %}
+<div style="max-width:480px;margin:24px auto;padding:0 16px;">
+  <h1>Připojit se ke kvízu</h1>
+  {% if messages %}
+  <ul>
+    {% for message in messages %}
+      <li>{{ message }}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+  <form method="post">
+    {% csrf_token %}
+    <label for="code">Kód kvízu</label>
+    <input id="code" name="code" type="text" style="display:block;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;margin:8px 0;" placeholder="Zadejte kód">
+    <button type="submit" style="padding:8px 12px;border:1px solid #333;border-radius:6px;">Připojit</button>
+  </form>
+</div>
+{% endblock %}
+
+
