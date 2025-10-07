@@ -55,3 +55,7 @@ Plánovaná rozšíření
 - Sdílení kvízů mezi učiteli
 - Administrátorský panel pro lepší správu her
 - Přihlášení přes školní účet (OAuth2 / Microsoft)
+
+
+
+<img width="857" height="794" alt="Untitled" src="https://github.com/user-attachments/assets/afe538dd-4f84-4ff5-b57d-2193d0b3543d" />
