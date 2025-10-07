@@ -59,3 +59,80 @@ Plánovaná rozšíření
 
 
 <img width="857" height="794" alt="Untitled" src="https://github.com/user-attachments/assets/afe538dd-4f84-4ff5-b57d-2193d0b3543d" />
+
+
+## 🧩 Popis ER diagramu
+
+### 🧑‍💻 User
+**Pole:**
+- `id` – primární klíč  
+- `username` – text  
+- `email` – text  
+
+**Vztahy:**
+- **1:N → Quiz** – jeden uživatel (učitel) může vytvořit více kvízů  
+- **1:N → StudentAnswer** – jeden uživatel (student) může mít více záznamů odpovědí  
+
+---
+
+### 🧠 Quiz
+**Pole:**
+- `id` – primární klíč  
+- `title` – název kvízu  
+- `created_by` – cizí klíč na `User`  
+- `join_code` – osmiznakový kód pro připojení do hry  
+
+**Vztahy:**
+- **1:N → Question** – kvíz obsahuje více otázek  
+- **N:1 → User** – kvíz vytvořil konkrétní uživatel  
+
+---
+
+### ❓ Question
+**Pole:**
+- `id` – primární klíč  
+- `text` – text otázky  
+- `quiz_id` – cizí klíč na `Quiz`  
+
+**Vztahy:**
+- **1:N → Answer** – otázka má více odpovědí  
+- **N:1 → Quiz** – patří do konkrétního kvízu  
+
+---
+
+### 💬 Answer
+**Pole:**
+- `id` – primární klíč  
+- `text` – text odpovědi  
+- `is_correct` – označuje správnou odpověď (True/False)  
+- `question_id` – cizí klíč na `Question`  
+
+**Vztahy:**
+- **N:1 → Question** – odpověď patří k jedné otázce  
+- **1:N → StudentAnswer** – stejná odpověď může být vybrána více studenty  
+
+---
+
+### 🧾 StudentAnswer
+**Pole:**
+- `id` – primární klíč  
+- `student_id` – cizí klíč na `User`  
+- `question_id` – cizí klíč na `Question`  
+- `selected_answer_id` – cizí klíč na `Answer`  
+- `correct` – logická hodnota, nastavuje se automaticky podle `Answer.is_correct`  
+
+**Vztahy:**
+- **N:1 → User** – odpověď patří konkrétnímu studentovi  
+- **N:1 → Question** – vztah k otázce  
+- **N:1 → Answer** – vztah k vybrané odpovědi  
+
+
+### 🏠 HomePage *(Wagtail Page)*
+Stránkový model CMS bez relačních vazeb — slouží pouze pro obsah hlavní stránky.
+
+---
+
+### 📄 QuizPage *(Wagtail Page)*
+Stránkový model CMS s polem `body` (StreamField), umožňuje spravovat obsah kvízů přes administraci Wagtailu.  
+Není součástí relační logiky kvízového systému.
+
