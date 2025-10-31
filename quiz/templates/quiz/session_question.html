@@ -36,8 +36,24 @@
     <div style="margin:16px 0; padding:12px; background:#f7f7f7; border-radius:8px;">
       <p>Čekáte na odpovědi studentů...</p>
       <p>Odpovědělo: {{ answered_count }} / {{ total_participants }}</p>
+      {% if all_answered or remaining == 0 %}
+        {% if next_exists %}
+          <p>
+            <a href="{% url 'session_start_question' session.code qrun.order|add:1 %}" class="button">Přejít na další otázku</a>
+          </p>
+        {% else %}
+          <p>
+            <a href="{% url 'session_finish' session.code %}" class="button">Ukončit sezení</a>
+          </p>
+        {% endif %}
+      {% endif %}
     </div>
   {% else %}
+    {% if has_answered %}
+      <div style="margin:16px 0; padding:12px; background:#f0f0f0; border-radius:8px;">
+        <p>Odpověď přijata. Čekejte, než odpoví ostatní studenti nebo učitel spustí další otázku.</p>
+      </div>
+    {% else %}
     <form action="{% url 'session_submit_answer' session.code qrun.order %}" method="post">
       {% csrf_token %}
       <ul>
@@ -52,6 +68,7 @@
       </ul>
       <button type="submit">Odeslat</button>
     </form>
+    {% endif %}
   {% endif %}
 </div>
 {% endblock %}

@@ -140,6 +140,8 @@ def session_start_question(request, code, order):
     is_host = True
     total_participants = session.participants.count()
     answered_count = qrun.responses.values("participant_id").distinct().count()
+    all_answered = total_participants > 0 and answered_count >= total_participants
+    next_exists = QuestionRun.objects.filter(session=session, order=order + 1).exists()
     return render(
         request,
         "quiz/session_question.html",
@@ -150,6 +152,8 @@ def session_start_question(request, code, order):
             "is_host": is_host,
             "total_participants": total_participants,
             "answered_count": answered_count,
+            "all_answered": all_answered,
+            "next_exists": next_exists,
         },
     )
 
@@ -167,13 +171,23 @@ def session_submit_answer(request, code, order):
     if request.method == "POST":
         answer_id = request.POST.get("answer_id")
         if answer_id and timezone.now() <= (qrun.ends_at or timezone.now()):
-            answer = get_object_or_404(Answer, id=answer_id, question=qrun.question)
-            Response.objects.update_or_create(
-                question_run=qrun,
-                participant=participant,
-                defaults={"answer": answer, "answered_at": timezone.now()},
-            )
-            messages.success(request, "Odpověď uložena.")
+            # jen jednou – pokud už existuje, nepřepisuj
+            existing = Response.objects.filter(question_run=qrun, participant=participant).exists()
+            if not existing:
+                answer = get_object_or_404(Answer, id=answer_id, question=qrun.question)
+                Response.objects.create(
+                    question_run=qrun,
+                    participant=participant,
+                    answer=answer,
+                    answered_at=timezone.now(),
+                )
+                messages.success(request, "Odpověď uložena.")
+                # automatické ukončení: když odpověděli všichni účastníci
+                total_participants = session.participants.count()
+                answered_count = qrun.responses.values("participant_id").distinct().count()
+                if total_participants > 0 and answered_count >= total_participants and not qrun.ends_at:
+                    qrun.ends_at = timezone.now()
+                    qrun.save(update_fields=["ends_at"])
         return redirect("session_question_view", code=code, order=order)
     return redirect("session_lobby", code=code)
 
@@ -188,6 +202,15 @@ def session_question_view(request, code, order):
     # Statistiky odpovědí pro učitele
     total_participants = session.participants.count()
     answered_count = qrun.responses.values("participant_id").distinct().count()
+    all_answered = total_participants > 0 and answered_count >= total_participants
+    # má sezení další otázku?
+    next_exists = QuestionRun.objects.filter(session=session, order=order + 1).exists()
+    # Student – zobrazení pouze jednou
+    has_answered = False
+    if not is_host and request.user.is_authenticated:
+        participant = Participant.objects.filter(session=session, user=request.user).first()
+        if participant:
+            has_answered = qrun.responses.filter(participant=participant).exists()
     return render(
         request,
         "quiz/session_question.html",
@@ -198,6 +221,9 @@ def session_question_view(request, code, order):
             "is_host": is_host,
             "total_participants": total_participants,
             "answered_count": answered_count,
+            "all_answered": all_answered,
+            "next_exists": next_exists,
+            "has_answered": has_answered,
         },
     )
 
