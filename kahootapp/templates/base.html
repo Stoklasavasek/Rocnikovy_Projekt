@@ -1,0 +1,62 @@
+{% load static wagtailcore_tags wagtailuserbar socialaccount %}
+
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>
+            {% block title %}
+            {% if page.seo_title %}{{ page.seo_title }}{% else %}{{ page.title }}{% endif %}
+            {% endblock %}
+            {% block title_suffix %}
+            {% wagtail_site as current_site %}
+            {% if current_site and current_site.site_name %}- {{ current_site.site_name }}{% endif %}
+            {% endblock %}
+        </title>
+        {% if page.search_description %}
+        <meta name="description" content="{{ page.search_description }}" />
+        {% endif %}
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+        {# Force all links in the live preview panel to be opened in a new tab #}
+        {% if request.in_preview_panel %}
+        <base target="_blank">
+        {% endif %}
+
+        {# Global stylesheets #}
+        <link rel="stylesheet" type="text/css" href="{% static 'css/kahootapp.css' %}">
+
+        {% block extra_css %}
+        {# Override this in templates to add extra stylesheets #}
+        {% endblock %}
+    </head>
+
+    <body class="{% block body_class %}{% endblock %}">
+        {% wagtailuserbar %}
+
+        <header style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #eee;">
+            <div>
+                <a href="/" style="text-decoration:none;color:inherit;font-weight:600;">Kahoot pro školu</a>
+            </div>
+            <nav>
+                {% if request.user.is_authenticated %}
+                    <span style="margin-right:12px;">{{ request.user.get_full_name|default:request.user.username }}</span>
+                    <a href="{% url 'quiz_list' %}" style="margin-right:12px;">Kvízy</a>
+                    <a href="{% url 'quiz_join' %}" style="margin-right:12px;">Připojit se k kvízu</a>
+                    <a href="{% url 'account_logout' %}" style="padding:8px 12px;border:1px solid #ccc;border-radius:6px;">Odhlásit</a>
+                {% else %}
+                    <a href="{% provider_login_url 'microsoft' method='oauth2' %}" style="padding:8px 12px;border:1px solid #1877f2;border-radius:6px;color:#1877f2;">Přihlásit se přes Microsoft</a>
+                {% endif %}
+            </nav>
+        </header>
+
+        {% block content %}{% endblock %}
+
+        {# Global javascript #}
+        <script type="text/javascript" src="{% static 'js/kahootapp.js' %}"></script>
+
+        {% block extra_js %}
+        {# Override this in templates to add extra javascript #}
+        {% endblock %}
+    </body>
+</html>
