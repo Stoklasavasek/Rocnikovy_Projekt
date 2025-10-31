@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block content %}
+<div style="max-width:800px;margin:24px auto;padding:0 16px;">
+  <h1>Lobby: {{ session.quiz.title }}</h1>
+  <p>Kód pro připojení: <strong>{{ session.code }}</strong></p>
+  
+  {% if is_host %}
+    {# Teacher view #}
+    <h3>Účastníci</h3>
+    <ul>
+      {% for p in session.participants.all %}
+        <li>{{ p.display_name }}</li>
+      {% empty %}
+        <li>Zatím nikdo</li>
+      {% endfor %}
+    </ul>
+    <h3>Otázky</h3>
+    <ol>
+      {% for qrun in session.question_runs.all %}
+        <li>
+          {{ qrun.question.text }}
+          {% if not qrun.starts_at %}
+            — <a href="{% url 'session_start_question' session.code qrun.order %}">Spustit</a>
+          {% else %}
+            — spuštěno
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ol>
+    <p>
+      <a href="{% url 'session_finish' session.code %}">Ukončit sezení</a>
+    </p>
+  {% else %}
+    {# Student view #}
+    <p>Přihlášen jako: <strong>{{ participant.display_name }}</strong></p>
+    <div style="margin-top: 20px; padding: 20px; background: #f0f0f0; border-radius: 8px;">
+      <p>✅ Úspěšně jste se připojili!</p>
+      <p>Jakmile učitel spustí otázku, budete automaticky přesměrováni.</p>
+      <p><em>Pokud ještě žádná neběží, uvidíte tuto lobby.</em></p>
+    </div>
+    <script>
+      (function() {
+        const code = "{{ session.code }}";
+        async function tick() {
+          try {
+            const res = await fetch("{% url 'session_status' session.code %}", { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+            if (!res.ok) return;
+            const data = await res.json();
+            if (data.state === 'finished') {
+              window.location.href = "{% url 'session_results' session.code %}";
+              return;
+            }
+            if (data.state === 'question') {
+              window.location.href = "/session/" + code + "/q/" + data.order + "/";
+              return;
+            }
+          } catch (e) { /* ignore */ }
+        }
+        setInterval(tick, 2000);
+      })();
+    </script>
+    <h3>Další účastníci</h3>
+    <ul>
+      {% for p in session.participants.all %}
+        <li>{{ p.display_name }}{% if p.id == participant.id %} (vy){% endif %}</li>
+      {% empty %}
+        <li>Zatím jste sami</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+</div>
+{% endblock %}
+

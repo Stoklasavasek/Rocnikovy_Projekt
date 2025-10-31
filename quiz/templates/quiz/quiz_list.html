@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block body_class %}template-quiz-list{% endblock %}
+
+{% block content %}
+<div style="max-width:900px;margin:24px auto;padding:0 16px;">
+  <h1>Moje kvízy</h1>
+  <p>
+    <a href="{% url 'quiz_create' %}" style="text-decoration:underline;margin-right:12px;">Vytvořit kvíz</a>
+    <a href="/admin/" style="text-decoration:underline;">Spravovat v administraci</a>
+  </p>
+
+  <table style="width:100%;border-collapse:collapse;margin-top:16px;">
+    <thead>
+      <tr>
+        <th style="text-align:left;border-bottom:1px solid #ddd;padding:8px;">Název</th>
+        <th style="text-align:left;border-bottom:1px solid #ddd;padding:8px;">Kód</th>
+        <th style="text-align:left;border-bottom:1px solid #ddd;padding:8px;">Akce</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for quiz in quizzes %}
+      <tr>
+        <td style="border-bottom:1px solid #f0f0f0;padding:8px;">{{ quiz.title }}</td>
+        <td style="border-bottom:1px solid #f0f0f0;padding:8px;">{{ quiz.join_code }}</td>
+        <td style="border-bottom:1px solid #f0f0f0;padding:8px;">
+          <a href="{% url 'session_create' quiz.id %}">Start live</a> ·
+          <a href="{% url 'quiz_start' quiz.id %}">Spustit / vyplnit</a> ·
+          <a href="{% url 'quiz_update' quiz.id %}">Upravit</a> ·
+          <a href="{% url 'quiz_delete' quiz.id %}">Smazat</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="2" style="padding:8px;">Zatím žádné kvízy.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<div style="max-width:900px;margin:24px auto;padding:0 16px;">
+  <h2>Aktivní sezení</h2>
+  <ul>
+    {% for s in active_sessions %}
+      <li>
+        Kód: <strong>{{ s.code }}</strong> – <a href="{% url 'session_lobby' s.code %}">Lobby</a> · <a href="{% url 'session_results' s.code %}">Výsledky</a>
+      </li>
+    {% empty %}
+      <li>Žádná aktivní sezení.</li>
+    {% endfor %}
+  </ul>
+</div>
+{% endblock %}
+
+

@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block content %}
+<div style="max-width:800px;margin:24px auto;padding:0 16px;">
+  <h1>{{ session.quiz.title }}</h1>
+  <h2>Otázka {{ qrun.order }}: {{ qrun.question.text }}</h2>
+  {% if remaining %}
+    <p>Zbývající čas: {{ remaining }} s</p>
+  {% endif %}
+  <script>
+    (function() {
+      const code = "{{ session.code }}";
+      const currentOrder = {{ qrun.order }};
+      async function tick() {
+        try {
+          const res = await fetch("{% url 'session_status' session.code %}", { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+          if (!res.ok) return;
+          const data = await res.json();
+          if (data.state === 'finished') {
+            window.location.href = "{% url 'session_results' session.code %}";
+            return;
+          }
+          if (data.state === 'question' && data.order !== currentOrder) {
+            window.location.href = "/session/" + code + "/q/" + data.order + "/";
+            return;
+          }
+          if (data.state === 'waiting') {
+            // otázka skončila a další zatím neběží – vrať se do lobby
+            window.location.href = "{% url 'session_lobby' session.code %}";
+          }
+        } catch (e) { /* ignore */ }
+      }
+      setInterval(tick, 2000);
+    })();
+  </script>
+  {% if is_host %}
+    <div style="margin:16px 0; padding:12px; background:#f7f7f7; border-radius:8px;">
+      <p>Čekáte na odpovědi studentů...</p>
+      <p>Odpovědělo: {{ answered_count }} / {{ total_participants }}</p>
+    </div>
+  {% else %}
+    <form action="{% url 'session_submit_answer' session.code qrun.order %}" method="post">
+      {% csrf_token %}
+      <ul>
+        {% for a in qrun.question.answers.all %}
+          <li>
+            <label>
+              <input type="radio" name="answer_id" value="{{ a.id }}" required>
+              {{ a.text }}
+            </label>
+          </li>
+        {% endfor %}
+      </ul>
+      <button type="submit">Odeslat</button>
+    </form>
+  {% endif %}
+</div>
+{% endblock %}
+

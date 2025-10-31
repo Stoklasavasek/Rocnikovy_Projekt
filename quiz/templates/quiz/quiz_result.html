@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block body_class %}template-quiz-result{% endblock %}
+
+{% block content %}
+<div style="max-width:600px;margin:24px auto;padding:0 16px;text-align:center;">
+  <h1>Výsledek</h1>
+  <p>Skóre: <strong>{{ score }}</strong> / {{ total }}</p>
+  <p>
+    <a href="{% url 'quiz_list' %}">Zpět na kvízy</a>
+  </p>
+</div>
+{% endblock %}
+
+

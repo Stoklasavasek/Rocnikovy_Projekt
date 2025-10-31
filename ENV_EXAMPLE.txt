@@ -1,0 +1,12 @@
+MS_CLIENT_ID=your-azure-app-client-id
+MS_CLIENT_SECRET=your-azure-app-client-secret
+MS_TENANT_ID=your-tenant-id-or-common
+MS_AUTH_SCOPE=User.Read
+
+# Usage:
+# 1) Copy these into a local .env file (do NOT commit it)
+# 2) Or export into shell before running server, e.g.:
+#    export MS_CLIENT_ID=...
+#    export MS_CLIENT_SECRET=...
+#    export MS_TENANT_ID=...
+#    export MS_AUTH_SCOPE="User.Read"

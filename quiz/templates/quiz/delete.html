@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block body_class %}template-quiz-delete{% endblock %}
+
+{% block content %}
+<div style="max-width:640px;margin:24px auto;padding:0 16px;">
+  <h1>Smazat kvíz</h1>
+  <p>Opravdu chcete smazat kvíz "{{ quiz.title }}"?</p>
+  <form method="post">
+    {% csrf_token %}
+    <button type="submit" style="padding:8px 12px;border:1px solid #d11;border-radius:6px;background:#fdd;">Smazat</button>
+    <a href="{% url 'quiz_list' %}" style="margin-left:12px;">Zrušit</a>
+  </form>
+  
+</div>
+{% endblock %}
+
+

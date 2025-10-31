@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+<div style="max-width:800px;margin:24px auto;padding:0 16px;">
+  <h1>Výsledky: {{ session.quiz.title }} ({{ session.code }})</h1>
+  {% if is_host %}
+    <p><a href="{% url 'session_results_csv' session.code %}">Stáhnout CSV</a></p>
+    <table style="width:100%;border-collapse:collapse;">
+      <thead>
+        <tr>
+          <th style="text-align:left;border-bottom:1px solid #ddd;padding:8px;">Účastník</th>
+          <th style="text-align:left;border-bottom:1px solid #ddd;padding:8px;">Skóre</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in leaderboard %}
+        <tr>
+          <td style="border-bottom:1px solid #f0f0f0;padding:8px;">{{ item.participant.display_name }}</td>
+          <td style="border-bottom:1px solid #f0f0f0;padding:8px;">{{ item.score }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <div style="margin-top: 16px; padding: 16px; background: #f7f7f7; border-radius: 8px;">
+      <strong>Konec kvízu.</strong>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
+
