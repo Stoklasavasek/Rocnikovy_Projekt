@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% load socialaccount %}
+{% block content %}
+<div class="container">
+  <div class="card pad" style="max-width:460px;margin:40px auto;">
+    <h2 style="margin:0 0 12px;">Přihlášení</h2>
+    <form method="post" action="{% url 'account_login' %}">
+      {% csrf_token %}
+      {{ form.non_field_errors }}
+      <div style="display:grid;gap:12px;">
+        {{ form.login.label_tag }}
+        {{ form.login }}
+        {{ form.password.label_tag }}
+        {{ form.password }}
+      </div>
+      <div style="margin-top:16px;display:flex;gap:12px;align-items:center;">
+        <button class="btn primary" type="submit">Přihlásit</button>
+        <a class="btn" href="{% url 'account_signup' %}">Registrace</a>
+      </div>
+    </form>
+    <hr style="margin:20px 0;border:none;border-top:1px solid #eee;">
+    <div>
+      <a class="btn" href="{% provider_login_url 'microsoft' method='oauth2' %}">Přihlásit se přes Microsoft</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

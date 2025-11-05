@@ -45,7 +45,8 @@
                     <a href="{% url 'quiz_join' %}" style="margin-right:12px;">Připojit se k kvízu</a>
                     <a href="{% url 'account_logout' %}" style="padding:8px 12px;border:1px solid #ccc;border-radius:6px;">Odhlásit</a>
                 {% else %}
-                    <a href="{% provider_login_url 'microsoft' method='oauth2' %}" style="padding:8px 12px;border:1px solid #1877f2;border-radius:6px;color:#1877f2;">Přihlásit se přes Microsoft</a>
+                    <a href="{% url 'account_login' %}" style="margin-right:12px;">Přihlášení</a>
+                    <a href="{% url 'account_signup' %}" style="padding:8px 12px;border:1px solid #1877f2;border-radius:6px;color:#1877f2;">Registrace</a>
                 {% endif %}
             </nav>
         </header>

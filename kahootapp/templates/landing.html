@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container">
+  <section class="hero card pad">
+    <h1>Kvízy pro školu</h1>
+    <p>Vytvářej kvízy, spouštěj live sezení a nech studenty soutěžit.</p>
+    <div class="actions">
+      <a class="btn primary" href="{% url 'quiz_list' %}">Moje kvízy</a>
+      <a class="btn" href="{% url 'quiz_join' %}">Připojit se k kódu</a>
+      <a class="btn ghost" href="/admin/">Administrace</a>
+    </div>
+  </section>
+</div>
+{% endblock %}

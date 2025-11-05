@@ -11,6 +11,8 @@ from search import views as search_views
 from quiz import views as quiz_views
 
 urlpatterns = [
+    # Custom landing page (overrides Wagtail root)
+    path("", quiz_views.landing, name="landing"),
     # Django admin
     path("django-admin/", admin.site.urls),
 
@@ -32,6 +34,8 @@ urlpatterns = [
     path("quiz/join/", quiz_views.join_quiz_by_code, name="quiz_join"),
     path("quiz/create/", quiz_views.quiz_create, name="quiz_create"),
     path("quiz/<int:quiz_id>/edit/", quiz_views.quiz_update, name="quiz_update"),
+    path("quiz/<int:quiz_id>/questions/", quiz_views.quiz_questions, name="quiz_questions"),
+    path("quiz/question/<int:question_id>/answers/", quiz_views.question_answers, name="question_answers"),
     path("quiz/<int:quiz_id>/delete/", quiz_views.quiz_delete, name="quiz_delete"),
     # Live session routes
     path("quiz/<int:quiz_id>/session/create/", quiz_views.session_create, name="session_create"),

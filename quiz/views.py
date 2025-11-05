@@ -1,6 +1,6 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from .models import Quiz, Question, Answer, StudentAnswer, QuizSession, Participant, QuestionRun, Response
-from .forms import QuizForm
+from .forms import QuizForm, QuestionFormSet, AnswerFormSet
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from .roles import teacher_required
@@ -8,6 +8,8 @@ from django.http import HttpResponse, JsonResponse
 from django.db.models import Q
 import csv
 from django.utils import timezone
+def landing(request):
+    return render(request, "landing.html")
 
 @teacher_required
 def quiz_list(request):
@@ -65,8 +67,8 @@ def quiz_create(request):
             quiz = form.save(commit=False)
             quiz.created_by = request.user
             quiz.save()
-            messages.success(request, "Kvíz byl vytvořen.")
-            return redirect("quiz_list")
+            messages.success(request, "Kvíz byl vytvořen. Přidejte otázky.")
+            return redirect("quiz_questions", quiz_id=quiz.id)
     else:
         form = QuizForm()
     return render(request, "quiz/edit.html", {"form": form, "heading": "Vytvořit kvíz"})
@@ -80,10 +82,38 @@ def quiz_update(request, quiz_id):
         if form.is_valid():
             form.save()
             messages.success(request, "Kvíz byl upraven.")
-            return redirect("quiz_list")
+            return redirect("quiz_questions", quiz_id=quiz.id)
     else:
         form = QuizForm(instance=quiz)
     return render(request, "quiz/edit.html", {"form": form, "heading": "Upravit kvíz"})
+
+
+@teacher_required
+def quiz_questions(request, quiz_id):
+    quiz = get_object_or_404(Quiz, id=quiz_id, created_by=request.user)
+    if request.method == "POST":
+        formset = QuestionFormSet(request.POST, instance=quiz)
+        if formset.is_valid():
+            formset.save()
+            messages.success(request, "Otázky byly uloženy.")
+            return redirect("quiz_questions", quiz_id=quiz.id)
+    else:
+        formset = QuestionFormSet(instance=quiz)
+    return render(request, "quiz/questions_edit.html", {"quiz": quiz, "formset": formset})
+
+
+@teacher_required
+def question_answers(request, question_id):
+    question = get_object_or_404(Question, id=question_id, quiz__created_by=request.user)
+    if request.method == "POST":
+        formset = AnswerFormSet(request.POST, instance=question)
+        if formset.is_valid():
+            formset.save()
+            messages.success(request, "Odpovědi byly uloženy.")
+            return redirect("quiz_questions", quiz_id=question.quiz.id)
+    else:
+        formset = AnswerFormSet(instance=question)
+    return render(request, "quiz/answers_edit.html", {"question": question, "formset": formset})
 
 
 @teacher_required

@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+<div style="max-width:800px;margin:24px auto;padding:0 16px;">
+  <h1>Odpovědi: {{ question.text }}</h1>
+  <form method="post">
+    {% csrf_token %}
+    {{ formset.management_form }}
+    <table style="width:100%;border-collapse:collapse;">
+      <thead>
+        <tr>
+          <th style="text-align:left;border-bottom:1px solid #ddd;padding:8px;">Text odpovědi</th>
+          <th style="text-align:left;border-bottom:1px solid #ddd;padding:8px;">Správná</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for form in formset %}
+        <tr>
+          <td style="padding:8px;">{{ form.text }}</td>
+          <td style="padding:8px;">{{ form.is_correct }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <div style="margin-top:12px;">
+      <button type="submit">Uložit odpovědi</button>
+      <a href="{% url 'quiz_questions' question.quiz.id %}" style="margin-left:12px;">Zpět na otázky</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
