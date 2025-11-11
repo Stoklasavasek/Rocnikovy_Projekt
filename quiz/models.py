@@ -1,7 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils.crypto import get_random_string
-from .models_wagtail import *
 from django.utils import timezone
 
 class Quiz(models.Model):
@@ -14,7 +13,6 @@ class Quiz(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.join_code:
-            # A-Z, 0-9 kód, 8 znaků
             self.join_code = get_random_string(8, allowed_chars="ABCDEFGHJKLMNPQRSTUVWXYZ23456789")
         super().save(*args, **kwargs)
 
@@ -44,7 +42,6 @@ class StudentAnswer(models.Model):
         super().save(*args, **kwargs)
 
 
-# Live session models
 class QuizSession(models.Model):
     quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name="sessions")
     host = models.ForeignKey(User, on_delete=models.CASCADE)

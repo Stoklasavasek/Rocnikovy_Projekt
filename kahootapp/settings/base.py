@@ -12,9 +12,12 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 
 
 import os
+from pathlib import Path
 
 PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BASE_DIR = os.path.dirname(PROJECT_DIR)
+
+
 
 SITE_ID = 1
 LOGIN_REDIRECT_URL = "/"   
@@ -30,7 +33,6 @@ ACCOUNT_EMAIL_VERIFICATION = "none"
 ACCOUNT_AUTHENTICATION_METHOD = "username_email"
 ACCOUNT_EMAIL_REQUIRED = False
 ACCOUNT_USERNAME_REQUIRED = True
-
 SOCIALACCOUNT_PROVIDERS = {
     "microsoft": {
         "APP": {

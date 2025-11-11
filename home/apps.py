@@ -6,5 +6,4 @@ class HomeConfig(AppConfig):
     name = "home"
 
     def ready(self):
-        # Import signal handlers
         from . import signals  # noqa: F401

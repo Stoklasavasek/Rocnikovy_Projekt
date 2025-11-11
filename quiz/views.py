@@ -23,7 +23,6 @@ def quiz_start(request, quiz_id):
     questions = quiz.questions.all()
 
     if request.method == "POST":
-        # Zpracování odpovědí
         score = 0
         for question in questions:
             selected_id = request.POST.get(f"question_{question.id}")
@@ -45,12 +44,10 @@ def quiz_start(request, quiz_id):
 def join_quiz_by_code(request):
     if request.method == "POST":
         code = request.POST.get("code", "").strip().upper()
-        # Přednostně hledej aktivní live sezení podle 6-místného kódu
         session = QuizSession.objects.filter(code__iexact=code, is_active=True).first()
         if session:
             request.session["session_code"] = session.code
             return redirect("session_lobby", code=session.code)
-        # fallback: statické spuštění kvízu přes join_code
         quiz = Quiz.objects.filter(join_code__iexact=code).first()
         if not quiz:
             messages.error(request, "Kód je neplatný.")
@@ -126,24 +123,20 @@ def quiz_delete(request, quiz_id):
     return render(request, "quiz/delete.html", {"quiz": quiz})
 
 
-# Teacher: create a live session for a quiz
 @teacher_required
 def session_create(request, quiz_id):
     quiz = get_object_or_404(Quiz, id=quiz_id, created_by=request.user)
     session = QuizSession.objects.create(quiz=quiz, host=request.user)
-    # předvyplň QuestionRun pro pořadí
     for index, q in enumerate(quiz.questions.all(), start=1):
         QuestionRun.objects.create(session=session, question=q, order=index)
     return redirect("session_lobby", code=session.code)
 
 
-# Lobby: shows code and participants (for both teacher and students)
 @login_required
 def session_lobby(request, code):
     session = get_object_or_404(QuizSession, code__iexact=code, is_active=True)
     is_host = session.host == request.user
     
-    # Create participant if student joins
     participant = None
     if not is_host:
         participant, created = Participant.objects.get_or_create(
@@ -159,13 +152,11 @@ def session_lobby(request, code):
     })
 
 
-# Teacher: start a specific question (by order)
 @teacher_required
 def session_start_question(request, code, order):
     session = get_object_or_404(QuizSession, code__iexact=code, host=request.user, is_active=True)
     qrun = get_object_or_404(QuestionRun, session=session, order=order)
     qrun.start_now()
-    # předat stejné proměnné jako ve view pro zobrazení otázky
     remaining = max(0, int((qrun.ends_at - timezone.now()).total_seconds())) if qrun.ends_at else 0
     is_host = True
     total_participants = session.participants.count()
@@ -188,12 +179,10 @@ def session_start_question(request, code, order):
     )
 
 
-# Student: submit answer in a live session
 @login_required
 def session_submit_answer(request, code, order):
     session = get_object_or_404(QuizSession, code__iexact=code, is_active=True)
     qrun = get_object_or_404(QuestionRun, session=session, order=order)
-    # Učitel nemůže odesílat odpovědi
     if request.user == session.host:
         messages.error(request, "Učitel nemůže odesílat odpovědi.")
         return redirect("session_question_view", code=code, order=order)
@@ -201,7 +190,6 @@ def session_submit_answer(request, code, order):
     if request.method == "POST":
         answer_id = request.POST.get("answer_id")
         if answer_id and timezone.now() <= (qrun.ends_at or timezone.now()):
-            # jen jednou – pokud už existuje, nepřepisuj
             existing = Response.objects.filter(question_run=qrun, participant=participant).exists()
             if not existing:
                 answer = get_object_or_404(Answer, id=answer_id, question=qrun.question)
@@ -212,7 +200,6 @@ def session_submit_answer(request, code, order):
                     answered_at=timezone.now(),
                 )
                 messages.success(request, "Odpověď uložena.")
-                # automatické ukončení: když odpověděli všichni účastníci
                 total_participants = session.participants.count()
                 answered_count = qrun.responses.values("participant_id").distinct().count()
                 if total_participants > 0 and answered_count >= total_participants and not qrun.ends_at:
@@ -222,20 +209,16 @@ def session_submit_answer(request, code, order):
     return redirect("session_lobby", code=code)
 
 
-# Student/Teacher: view current question (simple polling-less render)
 @login_required
 def session_question_view(request, code, order):
     session = get_object_or_404(QuizSession, code__iexact=code)
     qrun = get_object_or_404(QuestionRun, session=session, order=order)
     remaining = max(0, int((qrun.ends_at - timezone.now()).total_seconds())) if qrun.ends_at else 0
     is_host = request.user == session.host
-    # Statistiky odpovědí pro učitele
     total_participants = session.participants.count()
     answered_count = qrun.responses.values("participant_id").distinct().count()
     all_answered = total_participants > 0 and answered_count >= total_participants
-    # má sezení další otázku?
     next_exists = QuestionRun.objects.filter(session=session, order=order + 1).exists()
-    # Student – zobrazení pouze jednou
     has_answered = False
     if not is_host and request.user.is_authenticated:
         participant = Participant.objects.filter(session=session, user=request.user).first()
@@ -258,12 +241,10 @@ def session_question_view(request, code, order):
     )
 
 
-# Student/Teacher: redirect to currently running question (if any)
 @login_required
 def session_current_question(request, code):
     session = get_object_or_404(QuizSession, code__iexact=code, is_active=True)
     now = timezone.now()
-    # najdi otázku, která právě běží (má starts_at a ještě neskončila)
     current = (
         session.question_runs
         .filter(starts_at__isnull=False)
@@ -277,7 +258,6 @@ def session_current_question(request, code):
     return redirect("session_lobby", code=session.code)
 
 
-# Stav sezení pro automatickou navigaci studentů
 @login_required
 def session_status(request, code):
     session = get_object_or_404(QuizSession, code__iexact=code)
@@ -296,7 +276,6 @@ def session_status(request, code):
     return JsonResponse({"state": "waiting"})
 
 
-# Teacher: finish session and show leaderboard
 @teacher_required
 def session_finish(request, code):
     session = get_object_or_404(QuizSession, code__iexact=code, host=request.user)
@@ -306,16 +285,13 @@ def session_finish(request, code):
     return redirect("session_results", code=code)
 
 
-# Results visible to everyone with the code (e.g., students after finish)
 @login_required
 def session_results(request, code):
     session = get_object_or_404(QuizSession, code__iexact=code)
     is_host = request.user == session.host
-    # jednoduché skóre: count correct per participant
     scores = {}
     for resp in Response.objects.filter(question_run__session=session, is_correct=True).select_related("participant"):
         scores[resp.participant_id] = scores.get(resp.participant_id, 0) + 1
-    # vytvoř strukturu pro šablonu bez vlastního filtru
     leaderboard = [
         {
             "participant": p,
@@ -333,7 +309,6 @@ def session_results(request, code):
 
 @teacher_required
 def session_results_csv(request, code):
-    # povol pouze hosta; ostatní vrátí 403
     session = get_object_or_404(QuizSession, code__iexact=code)
     if request.user != session.host:
         return HttpResponse(status=403)
