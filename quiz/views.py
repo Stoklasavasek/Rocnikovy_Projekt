@@ -9,7 +9,9 @@ from django.db.models import Q
 import csv
 from django.utils import timezone
 def landing(request):
-    return render(request, "landing.html")
+    from quiz.roles import user_is_teacher
+    is_teacher = user_is_teacher(request.user) if request.user.is_authenticated else False
+    return render(request, "landing.html", {"is_teacher": is_teacher})
 
 @teacher_required
 def quiz_list(request):
@@ -21,6 +23,19 @@ def quiz_list(request):
 def quiz_start(request, quiz_id):
     quiz = get_object_or_404(Quiz, id=quiz_id)
     questions = quiz.questions.all()
+
+    if not questions.exists():
+        messages.warning(request, "Tento kvíz nemá žádné otázky. Nejdříve přidejte otázky.")
+        if request.user == quiz.created_by:
+            return redirect("quiz_questions", quiz_id=quiz.id)
+        return redirect("quiz_list")
+
+    for question in questions:
+        if not question.answers.exists():
+            messages.warning(request, f"Otázka '{question.text}' nemá žádné odpovědi.")
+            if request.user == quiz.created_by:
+                return redirect("quiz_questions", quiz_id=quiz.id)
+            return redirect("quiz_list")
 
     if request.method == "POST":
         score = 0

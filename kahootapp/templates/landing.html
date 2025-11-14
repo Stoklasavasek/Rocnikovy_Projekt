@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 {% block content %}
 <div class="container">
   <section class="hero card pad">
@@ -6,8 +7,10 @@
     <p>Vytvářej kvízy, spouštěj live sezení a nech studenty soutěžit.</p>
     <div class="actions">
       <a class="btn primary" href="{% url 'quiz_list' %}">Moje kvízy</a>
-      <a class="btn" href="{% url 'quiz_join' %}">Připojit se k kódu</a>
-      <a class="btn ghost" href="/admin/">Administrace</a>
+      <a class="btn" href="{% url 'quiz_join' %}">Připojit se k kódu</a>
+      {% if is_teacher %}
+        <a class="btn ghost" href="/admin/">Administrace</a>
+      {% endif %}
     </div>
   </section>
 </div>
