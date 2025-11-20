@@ -3,7 +3,7 @@
 <div style="max-width:800px;margin:24px auto;padding:0 16px;">
   <h1>Výsledky: {{ session.quiz.title }} ({{ session.code }})</h1>
   {% if is_host %}
-    <p><a href="{% url 'session_results_csv' session.code %}">Stáhnout CSV</a></p>
+    <p><a href="{% url 'session_results_csv' session.hash %}">Stáhnout CSV</a></p>
     <table style="width:100%;border-collapse:collapse;">
       <thead>
         <tr>

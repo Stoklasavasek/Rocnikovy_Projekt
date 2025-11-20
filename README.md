@@ -87,3 +87,8 @@ Volitelně můžeš vytvořit i diagram (Mermaid/obrázek). Pokud nechceš řeš
 ### Poznámky
 - Pro produkční nasazení použij PostgreSQL a nastav proměnné prostředí (SECRET_KEY, DEBUG=False atd.).
 - Wagtail oprávnění nastav ve skupinách podle potřeby (přístup do Wagtail adminu, práva ke stránkám, dokumentům a obrázkům).
+
+
+socekt io 
+hash USL - genrator hash
+vyhodcovani postupne mezi otazkami

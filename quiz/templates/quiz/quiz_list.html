@@ -44,7 +44,7 @@
   <ul>
     {% for s in active_sessions %}
       <li>
-        Kód: <strong>{{ s.code }}</strong> – <a href="{% url 'session_lobby' s.code %}">Lobby</a> · <a href="{% url 'session_results' s.code %}">Výsledky</a>
+        Kód: <strong>{{ s.code }}</strong> – <a href="{% url 'session_lobby' s.hash %}">Lobby</a> · <a href="{% url 'session_results' s.hash %}">Výsledky</a>
       </li>
     {% empty %}
       <li>Žádná aktivní sezení.</li>

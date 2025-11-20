@@ -2,6 +2,9 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.utils.crypto import get_random_string
 from django.utils import timezone
+from django.conf import settings
+import secrets
+import hashlib
 
 class Quiz(models.Model):
     title = models.CharField(max_length=200)
@@ -42,10 +45,17 @@ class StudentAnswer(models.Model):
         super().save(*args, **kwargs)
 
 
+def generate_session_hash():
+    random_token = secrets.token_urlsafe(32)
+    secret_key = getattr(settings, 'SECRET_KEY', 'default-secret-key')
+    combined = f"{random_token}{secret_key}{timezone.now().isoformat()}"
+    return hashlib.sha256(combined.encode()).hexdigest()[:64]
+
 class QuizSession(models.Model):
     quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name="sessions")
     host = models.ForeignKey(User, on_delete=models.CASCADE)
     code = models.CharField(max_length=6, unique=True, blank=True)
+    hash = models.CharField(max_length=64, unique=True, blank=True, db_index=True)
     started_at = models.DateTimeField(null=True, blank=True)
     finished_at = models.DateTimeField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
@@ -53,6 +63,8 @@ class QuizSession(models.Model):
     def save(self, *args, **kwargs):
         if not self.code:
             self.code = get_random_string(6, allowed_chars="ABCDEFGHJKLMNPQRSTUVWXYZ23456789")
+        if not self.hash:
+            self.hash = generate_session_hash()
         super().save(*args, **kwargs)
 
     def __str__(self):

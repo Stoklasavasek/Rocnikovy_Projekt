@@ -20,7 +20,7 @@
         <li>
           {{ qrun.question.text }}
           {% if not qrun.starts_at %}
-            — <a href="{% url 'session_start_question' session.code qrun.order %}">Spustit</a>
+            — <a href="{% url 'session_start_question' session.hash qrun.order %}">Spustit</a>
           {% else %}
             — spuštěno
           {% endif %}
@@ -28,7 +28,7 @@
       {% endfor %}
     </ol>
     <p>
-      <a href="{% url 'session_finish' session.code %}">Ukončit sezení</a>
+      <a href="{% url 'session_finish' session.hash %}">Ukončit sezení</a>
     </p>
   {% else %}
     {# Student view #}
@@ -40,18 +40,18 @@
     </div>
     <script>
       (function() {
-        const code = "{{ session.code }}";
+        const hash = "{{ session.hash }}";
         async function tick() {
           try {
-            const res = await fetch("{% url 'session_status' session.code %}", { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+            const res = await fetch("{% url 'session_status' session.hash %}", { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
             if (!res.ok) return;
             const data = await res.json();
             if (data.state === 'finished') {
-              window.location.href = "{% url 'session_results' session.code %}";
+              window.location.href = "{% url 'session_results' session.hash %}";
               return;
             }
             if (data.state === 'question') {
-              window.location.href = "/session/" + code + "/q/" + data.order + "/";
+              window.location.href = "/session/" + hash + "/q/" + data.order + "/";
               return;
             }
           } catch (e) { /* ignore */ }

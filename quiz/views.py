@@ -61,8 +61,8 @@ def join_quiz_by_code(request):
         code = request.POST.get("code", "").strip().upper()
         session = QuizSession.objects.filter(code__iexact=code, is_active=True).first()
         if session:
-            request.session["session_code"] = session.code
-            return redirect("session_lobby", code=session.code)
+            request.session["session_hash"] = session.hash
+            return redirect("session_lobby", hash=session.hash)
         quiz = Quiz.objects.filter(join_code__iexact=code).first()
         if not quiz:
             messages.error(request, "Kód je neplatný.")
@@ -144,12 +144,12 @@ def session_create(request, quiz_id):
     session = QuizSession.objects.create(quiz=quiz, host=request.user)
     for index, q in enumerate(quiz.questions.all(), start=1):
         QuestionRun.objects.create(session=session, question=q, order=index)
-    return redirect("session_lobby", code=session.code)
+    return redirect("session_lobby", hash=session.hash)
 
 
 @login_required
-def session_lobby(request, code):
-    session = get_object_or_404(QuizSession, code__iexact=code, is_active=True)
+def session_lobby(request, hash):
+    session = get_object_or_404(QuizSession, hash=hash, is_active=True)
     is_host = session.host == request.user
     
     participant = None
@@ -168,8 +168,8 @@ def session_lobby(request, code):
 
 
 @teacher_required
-def session_start_question(request, code, order):
-    session = get_object_or_404(QuizSession, code__iexact=code, host=request.user, is_active=True)
+def session_start_question(request, hash, order):
+    session = get_object_or_404(QuizSession, hash=hash, host=request.user, is_active=True)
     qrun = get_object_or_404(QuestionRun, session=session, order=order)
     qrun.start_now()
     remaining = max(0, int((qrun.ends_at - timezone.now()).total_seconds())) if qrun.ends_at else 0
@@ -195,12 +195,12 @@ def session_start_question(request, code, order):
 
 
 @login_required
-def session_submit_answer(request, code, order):
-    session = get_object_or_404(QuizSession, code__iexact=code, is_active=True)
+def session_submit_answer(request, hash, order):
+    session = get_object_or_404(QuizSession, hash=hash, is_active=True)
     qrun = get_object_or_404(QuestionRun, session=session, order=order)
     if request.user == session.host:
         messages.error(request, "Učitel nemůže odesílat odpovědi.")
-        return redirect("session_question_view", code=code, order=order)
+        return redirect("session_question_view", hash=hash, order=order)
     participant, _ = Participant.objects.get_or_create(session=session, user=request.user, defaults={"display_name": request.user.username})
     if request.method == "POST":
         answer_id = request.POST.get("answer_id")
@@ -220,13 +220,13 @@ def session_submit_answer(request, code, order):
                 if total_participants > 0 and answered_count >= total_participants and not qrun.ends_at:
                     qrun.ends_at = timezone.now()
                     qrun.save(update_fields=["ends_at"])
-        return redirect("session_question_view", code=code, order=order)
-    return redirect("session_lobby", code=code)
+        return redirect("session_question_view", hash=hash, order=order)
+    return redirect("session_lobby", hash=hash)
 
 
 @login_required
-def session_question_view(request, code, order):
-    session = get_object_or_404(QuizSession, code__iexact=code)
+def session_question_view(request, hash, order):
+    session = get_object_or_404(QuizSession, hash=hash)
     qrun = get_object_or_404(QuestionRun, session=session, order=order)
     remaining = max(0, int((qrun.ends_at - timezone.now()).total_seconds())) if qrun.ends_at else 0
     is_host = request.user == session.host
@@ -257,8 +257,8 @@ def session_question_view(request, code, order):
 
 
 @login_required
-def session_current_question(request, code):
-    session = get_object_or_404(QuizSession, code__iexact=code, is_active=True)
+def session_current_question(request, hash):
+    session = get_object_or_404(QuizSession, hash=hash, is_active=True)
     now = timezone.now()
     current = (
         session.question_runs
@@ -268,14 +268,14 @@ def session_current_question(request, code):
         .last()
     )
     if current:
-        return redirect("session_question_view", code=session.code, order=current.order)
+        return redirect("session_question_view", hash=session.hash, order=current.order)
     messages.info(request, "Zatím není spuštěná žádná otázka.")
-    return redirect("session_lobby", code=session.code)
+    return redirect("session_lobby", hash=session.hash)
 
 
 @login_required
-def session_status(request, code):
-    session = get_object_or_404(QuizSession, code__iexact=code)
+def session_status(request, hash):
+    session = get_object_or_404(QuizSession, hash=hash)
     if not session.is_active:
         return JsonResponse({"state": "finished"})
     now = timezone.now()
@@ -292,17 +292,17 @@ def session_status(request, code):
 
 
 @teacher_required
-def session_finish(request, code):
-    session = get_object_or_404(QuizSession, code__iexact=code, host=request.user)
+def session_finish(request, hash):
+    session = get_object_or_404(QuizSession, hash=hash, host=request.user)
     session.is_active = False
     session.finished_at = timezone.now()
     session.save(update_fields=["is_active", "finished_at"])
-    return redirect("session_results", code=code)
+    return redirect("session_results", hash=hash)
 
 
 @login_required
-def session_results(request, code):
-    session = get_object_or_404(QuizSession, code__iexact=code)
+def session_results(request, hash):
+    session = get_object_or_404(QuizSession, hash=hash)
     is_host = request.user == session.host
     scores = {}
     for resp in Response.objects.filter(question_run__session=session, is_correct=True).select_related("participant"):
@@ -323,8 +323,8 @@ def session_results(request, code):
 
 
 @teacher_required
-def session_results_csv(request, code):
-    session = get_object_or_404(QuizSession, code__iexact=code)
+def session_results_csv(request, hash):
+    session = get_object_or_404(QuizSession, hash=hash)
     if request.user != session.host:
         return HttpResponse(status=403)
     response = HttpResponse(content_type='text/csv')

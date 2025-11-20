@@ -43,7 +43,7 @@ SOCIALACCOUNT_PROVIDERS = {
     "microsoft": {
         "APP": {
             "client_id": os.environ.get("MS_CLIENT_ID", ""),
-            "secret": os.environ.get("MS_CLIENT_SECRET", ""),
+            "secret": os.environ.get("MS_CLIENT_SECRET","") ,
             "key": "",
         },
         "tenant": os.environ.get("MS_TENANT_ID", "common"),
