@@ -50,3 +50,17 @@ AnswerFormSet = inlineformset_factory(
     extra=2,
     can_delete=False,
 )
+
+
+class QuizCreateForm(forms.ModelForm):
+    """Formulář pro vytváření kvízu s otázkami a odpověďmi najednou"""
+    class Meta:
+        model = Quiz
+        fields = ["title"]
+        widgets = {
+            "title": forms.TextInput(attrs={
+                "class": "form-control",
+                "placeholder": "Název kvízu",
+                "style": "width: 100%; padding: 8px; margin-bottom: 20px;"
+            })
+        }

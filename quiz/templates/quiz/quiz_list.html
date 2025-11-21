@@ -6,10 +6,12 @@
 {% block content %}
 <div style="max-width:900px;margin:24px auto;padding:0 16px;">
   <h1>Moje kvízy</h1>
+  {% if is_teacher %}
   <p>
     <a href="{% url 'quiz_create' %}" style="text-decoration:underline;margin-right:12px;">Vytvořit kvíz</a>
     <a href="/admin/" style="text-decoration:underline;">Spravovat v administraci</a>
   </p>
+  {% endif %}
 
   <table style="width:100%;border-collapse:collapse;margin-top:16px;">
     <thead>

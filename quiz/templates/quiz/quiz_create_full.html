@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block body_class %}template-quiz-create-full{% endblock %}
+
+{% block content %}
+{% if not is_teacher %}
+  <div style="max-width:900px;margin:24px auto;padding:24px;text-align:center;">
+    <h1>Přístup zamítnut</h1>
+    <p>Pouze učitelé a administrátoři mohou vytvářet kvízy.</p>
+    <a href="{% url 'quiz_list' %}" style="margin-top:16px;display:inline-block;padding:10px 20px;background:#2196F3;color:white;text-decoration:none;border-radius:4px;">
+      Zpět na seznam kvízů
+    </a>
+  </div>
+{% else %}
+<div style="max-width:900px;margin:24px auto;padding:0 16px;">
+  <h1>{% if quiz %}Upravit kvíz{% else %}Vytvořit nový kvíz{% endif %}</h1>
+  <p style="color:#666;margin-bottom:24px;">{% if quiz %}Upravte kvíz s otázkami a odpověďmi.{% else %}Vytvořte kvíz s otázkami a odpověďmi najednou.{% endif %} Můžete přidat více otázek kliknutím na tlačítko "Přidat otázku".</p>
+  
+  <form method="post" id="quiz-form" action="{% if quiz %}{% url 'quiz_update' quiz.id %}{% else %}{% url 'quiz_create' %}{% endif %}">
+    {% csrf_token %}
+    
+    <div style="margin-bottom:32px;padding:16px;background:#f9f9f9;border-radius:8px;">
+      <label for="quiz_title" style="display:block;margin-bottom:8px;font-weight:bold;">Název kvízu:</label>
+      <input type="text" id="quiz_title" name="quiz_title" required 
+             placeholder="Např. Matematika - Zlomky" 
+             style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:16px;"
+             value="{{ quiz_title }}">
+    </div>
+    
+    <div id="questions-container">
+      <!-- Otázky budou přidány sem pomocí JavaScriptu -->
+    </div>
+    
+    {% if questions_data %}
+    <script id="questions-data" type="application/json">{{ questions_data|safe }}</script>
+    {% endif %}
+    
+    <div style="margin-top:24px;">
+      <button type="button" id="add-question-btn" 
+              style="padding:10px 20px;background:#4CAF50;color:white;border:none;border-radius:4px;cursor:pointer;font-size:16px;">
+        + Přidat otázku
+      </button>
+    </div>
+    
+    <div style="margin-top:32px;padding-top:24px;border-top:2px solid #ddd;">
+      <button type="submit" 
+              style="padding:12px 32px;background:#2196F3;color:white;border:none;border-radius:4px;cursor:pointer;font-size:16px;font-weight:bold;">
+        {% if quiz %}Uložit změny{% else %}Vytvořit kvíz{% endif %}
+      </button>
+      <a href="{% url 'quiz_list' %}" 
+         style="margin-left:16px;padding:12px 24px;background:#f0f0f0;color:#333;text-decoration:none;border-radius:4px;display:inline-block;">
+        Zrušit
+      </a>
+    </div>
+  </form>
+</div>
+
+<script>
+let questionIndex = 0;
+
+function addQuestion() {
+  const container = document.getElementById('questions-container');
+  const questionDiv = document.createElement('div');
+  questionDiv.className = 'question-block';
+  questionDiv.style.cssText = 'margin-bottom:32px;padding:20px;background:#fff;border:2px solid #e0e0e0;border-radius:8px;';
+  questionDiv.dataset.questionIndex = questionIndex;
+  
+  const currentQIndex = questionIndex;
+  questionDiv.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <h3 style="margin:0;color:#333;">Otázka ${questionIndex + 1}</h3>
+      <button type="button" class="remove-question-btn" 
+              style="padding:6px 12px;background:#f44336;color:white;border:none;border-radius:4px;cursor:pointer;">
+        Smazat otázku
+      </button>
+    </div>
+    
+    <div style="margin-bottom:16px;">
+      <label style="display:block;margin-bottom:8px;font-weight:bold;">Text otázky:</label>
+      <input type="text" name="question_${questionIndex}_text" required
+             placeholder="Zadejte text otázky"
+             style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:15px;">
+    </div>
+    
+    <div style="margin-top:20px;">
+      <label style="display:block;margin-bottom:12px;font-weight:bold;">Odpovědi:</label>
+      <div class="answers-container" style="display:grid;gap:12px;">
+        ${generateAnswers(currentQIndex, 0)}
+        ${generateAnswers(currentQIndex, 1)}
+        ${generateAnswers(currentQIndex, 2)}
+        ${generateAnswers(currentQIndex, 3)}
+      </div>
+      <button type="button" class="add-answer-btn" 
+              style="margin-top:12px;padding:8px 16px;background:#FF9800;color:white;border:none;border-radius:4px;cursor:pointer;">
+        + Přidat odpověď
+      </button>
+    </div>
+  `;
+  
+  container.appendChild(questionDiv);
+  
+  // Event listeners
+  questionDiv.querySelector('.remove-question-btn').addEventListener('click', function() {
+    questionDiv.remove();
+    updateQuestionNumbers();
+  });
+  
+  questionDiv.querySelector('.add-answer-btn').addEventListener('click', function() {
+    const answersContainer = questionDiv.querySelector('.answers-container');
+    const answerIndex = answersContainer.children.length;
+    const answerDiv = createAnswerDiv(currentQIndex, answerIndex);
+    answersContainer.appendChild(answerDiv);
+  });
+  
+  questionIndex++;
+  return questionDiv;
+}
+
+function generateAnswers(questionIdx, answerIdx) {
+  return `
+    <div class="answer-row" style="display:flex;gap:12px;align-items:center;">
+      <input type="text" name="question_${questionIdx}_answer_${answerIdx}_text" 
+             placeholder="Text odpovědi"
+             style="flex:1;padding:8px;border:1px solid #ddd;border-radius:4px;">
+      <label style="display:flex;align-items:center;gap:6px;white-space:nowrap;cursor:pointer;">
+        <input type="checkbox" name="question_${questionIdx}_answer_${answerIdx}_correct" 
+               style="width:20px;height:20px;cursor:pointer;">
+        <span>Správná</span>
+      </label>
+      <button type="button" class="remove-answer-btn" 
+              style="padding:6px 12px;background:#f44336;color:white;border:none;border-radius:4px;cursor:pointer;">
+        ×
+      </button>
+    </div>
+  `;
+}
+
+function createAnswerDiv(questionIdx, answerIdx) {
+  const div = document.createElement('div');
+  div.className = 'answer-row';
+  div.style.cssText = 'display:flex;gap:12px;align-items:center;';
+  div.innerHTML = `
+    <input type="text" name="question_${questionIdx}_answer_${answerIdx}_text" 
+           placeholder="Text odpovědi"
+           style="flex:1;padding:8px;border:1px solid #ddd;border-radius:4px;">
+    <label style="display:flex;align-items:center;gap:6px;white-space:nowrap;cursor:pointer;">
+      <input type="checkbox" name="question_${questionIdx}_answer_${answerIdx}_correct" 
+             style="width:20px;height:20px;cursor:pointer;">
+      <span>Správná</span>
+    </label>
+    <button type="button" class="remove-answer-btn" 
+            style="padding:6px 12px;background:#f44336;color:white;border:none;border-radius:4px;cursor:pointer;">
+      ×
+    </button>
+  `;
+  
+  div.querySelector('.remove-answer-btn').addEventListener('click', function() {
+    div.remove();
+  });
+  
+  return div;
+}
+
+function updateQuestionNumbers() {
+  const questions = document.querySelectorAll('.question-block');
+  questions.forEach((q, index) => {
+    q.querySelector('h3').textContent = `Otázka ${index + 1}`;
+  });
+}
+
+// Event listeners - musí být až po načtení DOM
+document.addEventListener('DOMContentLoaded', function() {
+  const addBtn = document.getElementById('add-question-btn');
+  if (addBtn) {
+    addBtn.addEventListener('click', addQuestion);
+  }
+});
+
+// Funkce pro načtení existujících otázek
+function loadExistingQuestions() {
+  const questionsDataScript = document.getElementById('questions-data');
+  if (questionsDataScript) {
+    try {
+      const existingQuestions = JSON.parse(questionsDataScript.textContent);
+      console.log('Načítám existující otázky:', existingQuestions);
+      
+      if (existingQuestions && existingQuestions.length > 0) {
+        existingQuestions.forEach(function(qData) {
+          const qDiv = addQuestion();
+          // Nastavit text otázky
+          const questionInput = qDiv.querySelector(`input[name^="question_"][name$="_text"]`);
+          if (questionInput && qData.text) {
+            questionInput.value = qData.text;
+          }
+          // Přidat odpovědi
+          if (qData.answers && qData.answers.length > 0) {
+            const answersContainer = qDiv.querySelector('.answers-container');
+            // Smazat výchozí odpovědi
+            answersContainer.innerHTML = '';
+            // Přidat existující odpovědi
+            qData.answers.forEach(function(aData, aIdx) {
+              const answerDiv = createAnswerDiv(questionIndex - 1, aIdx);
+              const answerInput = answerDiv.querySelector('input[type="text"]');
+              const correctCheckbox = answerDiv.querySelector('input[type="checkbox"]');
+              if (answerInput && aData.text) {
+                answerInput.value = aData.text;
+              }
+              if (correctCheckbox && aData.is_correct !== undefined) {
+                correctCheckbox.checked = aData.is_correct;
+              }
+              answersContainer.appendChild(answerDiv);
+            });
+          }
+        });
+      } else {
+        // Pokud nejsou žádné otázky, přidat prázdnou
+        addQuestion();
+      }
+    } catch (e) {
+      console.error('Chyba při načítání otázek:', e);
+      addQuestion();
+    }
+  } else {
+    // Přidat první otázku automaticky při vytváření
+    addQuestion();
+  }
+}
+
+// Spustit načítání po načtení DOM
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', loadExistingQuestions);
+} else {
+  loadExistingQuestions();
+}
+</script>
+
+<style>
+.question-block {
+  transition: box-shadow 0.3s;
+}
+.question-block:hover {
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+</style>
+{% endif %}
+{% endblock %}
+

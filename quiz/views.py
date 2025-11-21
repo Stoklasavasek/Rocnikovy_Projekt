@@ -15,9 +15,11 @@ def landing(request):
 
 @teacher_required
 def quiz_list(request):
+    from .roles import user_is_teacher
     quizzes = Quiz.objects.filter(created_by=request.user) if request.user.is_authenticated else Quiz.objects.none()
     active_sessions = QuizSession.objects.filter(host=request.user, is_active=True)
-    return render(request, "quiz/quiz_list.html", {"quizzes": quizzes, "active_sessions": active_sessions})
+    is_teacher = user_is_teacher(request.user)
+    return render(request, "quiz/quiz_list.html", {"quizzes": quizzes, "active_sessions": active_sessions, "is_teacher": is_teacher})
 
 @login_required
 def quiz_start(request, quiz_id):
@@ -73,31 +75,136 @@ def join_quiz_by_code(request):
 
 @teacher_required
 def quiz_create(request):
+    from .roles import user_is_teacher
+    is_teacher = user_is_teacher(request.user)
+    
     if request.method == "POST":
-        form = QuizForm(request.POST)
-        if form.is_valid():
-            quiz = form.save(commit=False)
-            quiz.created_by = request.user
-            quiz.save()
-            messages.success(request, "Kvíz byl vytvořen. Přidejte otázky.")
-            return redirect("quiz_questions", quiz_id=quiz.id)
-    else:
-        form = QuizForm()
-    return render(request, "quiz/edit.html", {"form": form, "heading": "Vytvořit kvíz"})
+        # Zpracování vytvoření kvízu s otázkami a odpověďmi najednou
+        quiz_title = request.POST.get("quiz_title", "").strip()
+        if not quiz_title:
+            messages.error(request, "Název kvízu je povinný.")
+            return render(request, "quiz/quiz_create_full.html", {"quiz_title": "", "is_teacher": is_teacher})
+        
+        # Vytvoření kvízu
+        quiz = Quiz.objects.create(title=quiz_title, created_by=request.user)
+        
+        # Zpracování otázek
+        question_count = 0
+        question_index = 0
+        
+        while True:
+            question_text = request.POST.get(f"question_{question_index}_text", "").strip()
+            if not question_text:
+                break
+            
+            question = Question.objects.create(quiz=quiz, text=question_text)
+            question_count += 1
+            
+            # Zpracování odpovědí pro tuto otázku
+            answer_count = 0
+            for answer_index in range(10):  # Max 10 odpovědí na otázku
+                answer_text = request.POST.get(f"question_{question_index}_answer_{answer_index}_text", "").strip()
+                if not answer_text:
+                    continue
+                
+                is_correct = request.POST.get(f"question_{question_index}_answer_{answer_index}_correct") == "on"
+                Answer.objects.create(question=question, text=answer_text, is_correct=is_correct)
+                answer_count += 1
+            
+            if answer_count == 0:
+                # Pokud otázka nemá odpovědi, smažeme ji
+                question.delete()
+                question_count -= 1
+            
+            question_index += 1
+        
+        if question_count > 0:
+            messages.success(request, f"Kvíz '{quiz.title}' byl vytvořen s {question_count} otázkami.")
+        else:
+            messages.warning(request, "Kvíz byl vytvořen, ale nemá žádné otázky.")
+        return redirect("quiz_list")
+    
+    return render(request, "quiz/quiz_create_full.html", {"quiz_title": "", "is_teacher": is_teacher, "quiz": None})
 
 
 @teacher_required
 def quiz_update(request, quiz_id):
+    from .roles import user_is_teacher
     quiz = get_object_or_404(Quiz, id=quiz_id, created_by=request.user)
+    is_teacher = user_is_teacher(request.user)
+    
     if request.method == "POST":
-        form = QuizForm(request.POST, instance=quiz)
-        if form.is_valid():
-            form.save()
-            messages.success(request, "Kvíz byl upraven.")
-            return redirect("quiz_questions", quiz_id=quiz.id)
-    else:
-        form = QuizForm(instance=quiz)
-    return render(request, "quiz/edit.html", {"form": form, "heading": "Upravit kvíz"})
+        # Zpracování úpravy kvízu s otázkami a odpověďmi najednou
+        quiz_title = request.POST.get("quiz_title", "").strip()
+        if not quiz_title:
+            messages.error(request, "Název kvízu je povinný.")
+            return redirect("quiz_update", quiz_id=quiz.id)
+        
+        # Aktualizace názvu kvízu
+        quiz.title = quiz_title
+        quiz.save()
+        
+        # Smazat všechny existující otázky a odpovědi
+        quiz.questions.all().delete()
+        
+        # Zpracování nových otázek
+        question_count = 0
+        question_index = 0
+        
+        while True:
+            question_text = request.POST.get(f"question_{question_index}_text", "").strip()
+            if not question_text:
+                break
+            
+            question = Question.objects.create(quiz=quiz, text=question_text)
+            question_count += 1
+            
+            # Zpracování odpovědí pro tuto otázku
+            answer_count = 0
+            for answer_index in range(10):  # Max 10 odpovědí na otázku
+                answer_text = request.POST.get(f"question_{question_index}_answer_{answer_index}_text", "").strip()
+                if not answer_text:
+                    continue
+                
+                is_correct = request.POST.get(f"question_{question_index}_answer_{answer_index}_correct") == "on"
+                Answer.objects.create(question=question, text=answer_text, is_correct=is_correct)
+                answer_count += 1
+            
+            if answer_count == 0:
+                # Pokud otázka nemá odpovědi, smažeme ji
+                question.delete()
+                question_count -= 1
+            
+            question_index += 1
+        
+        if question_count > 0:
+            messages.success(request, f"Kvíz '{quiz.title}' byl upraven s {question_count} otázkami.")
+        else:
+            messages.warning(request, "Kvíz byl upraven, ale nemá žádné otázky.")
+        return redirect("quiz_list")
+    
+    # Načtení existujících dat pro editaci
+    import json
+    from django.utils.safestring import mark_safe
+    questions_data = []
+    for question in quiz.questions.all().order_by('id'):
+        answers_data = []
+        for answer in question.answers.all():
+            answers_data.append({
+                'text': answer.text,
+                'is_correct': answer.is_correct
+            })
+        questions_data.append({
+            'text': question.text,
+            'answers': answers_data
+        })
+    
+    return render(request, "quiz/quiz_create_full.html", {
+        "quiz_title": quiz.title,
+        "is_teacher": is_teacher,
+        "quiz": quiz,
+        "questions_data": mark_safe(json.dumps(questions_data))
+    })
 
 
 @teacher_required
