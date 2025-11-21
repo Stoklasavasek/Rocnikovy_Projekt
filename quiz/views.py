@@ -285,6 +285,33 @@ def session_start_question(request, hash, order):
     answered_count = qrun.responses.values("participant_id").distinct().count()
     all_answered = total_participants > 0 and answered_count >= total_participants
     next_exists = QuestionRun.objects.filter(session=session, order=order + 1).exists()
+    
+    # Statistiky odpovědí
+    answer_stats = {}
+    participant_responses = {}
+    correct_responses = []
+    wrong_responses = []
+    for answer in qrun.question.answers.all():
+        count = qrun.responses.filter(answer=answer).count()
+        answer_stats[answer.id] = {
+            'answer': answer,
+            'count': count,
+            'is_correct': answer.is_correct
+        }
+    
+    for response in qrun.responses.select_related('participant', 'answer').all():
+        response_data = {
+            'participant': response.participant,
+            'answer': response.answer,
+            'is_correct': response.is_correct,
+            'answered_at': response.answered_at
+        }
+        participant_responses[response.participant.id] = response_data
+        if response.is_correct:
+            correct_responses.append(response_data)
+        else:
+            wrong_responses.append(response_data)
+    
     return render(
         request,
         "quiz/session_question.html",
@@ -297,6 +324,10 @@ def session_start_question(request, hash, order):
             "answered_count": answered_count,
             "all_answered": all_answered,
             "next_exists": next_exists,
+            "answer_stats": answer_stats,
+            "participant_responses": participant_responses,
+            "correct_responses": correct_responses,
+            "wrong_responses": wrong_responses,
         },
     )
 
@@ -346,6 +377,36 @@ def session_question_view(request, hash, order):
         participant = Participant.objects.filter(session=session, user=request.user).first()
         if participant:
             has_answered = qrun.responses.filter(participant=participant).exists()
+    
+    # Statistiky odpovědí pro učitele
+    answer_stats = {}
+    participant_responses = {}
+    correct_responses = []
+    wrong_responses = []
+    if is_host:
+        # Počítání odpovědí pro každou možnost
+        for answer in qrun.question.answers.all():
+            count = qrun.responses.filter(answer=answer).count()
+            answer_stats[answer.id] = {
+                'answer': answer,
+                'count': count,
+                'is_correct': answer.is_correct
+            }
+        
+        # Seznam účastníků a jejich odpovědi - rozděleno na správné a špatné
+        for response in qrun.responses.select_related('participant', 'answer').all():
+            response_data = {
+                'participant': response.participant,
+                'answer': response.answer,
+                'is_correct': response.is_correct,
+                'answered_at': response.answered_at
+            }
+            participant_responses[response.participant.id] = response_data
+            if response.is_correct:
+                correct_responses.append(response_data)
+            else:
+                wrong_responses.append(response_data)
+    
     return render(
         request,
         "quiz/session_question.html",
@@ -359,6 +420,10 @@ def session_question_view(request, hash, order):
             "all_answered": all_answered,
             "next_exists": next_exists,
             "has_answered": has_answered,
+            "answer_stats": answer_stats,
+            "participant_responses": participant_responses,
+            "correct_responses": correct_responses,
+            "wrong_responses": wrong_responses,
         },
     )
 

@@ -7,3 +7,10 @@ register = template.Library()
 def is_teacher(user):
     return user_is_teacher(user)
 
+@register.filter
+def get_item(dictionary, key):
+    """Získat hodnotu ze slovníku pomocí klíče"""
+    if dictionary is None:
+        return None
+    return dictionary.get(key)
+
