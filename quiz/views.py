@@ -279,6 +279,26 @@ def session_start_question(request, hash, order):
     session = get_object_or_404(QuizSession, hash=hash, host=request.user, is_active=True)
     qrun = get_object_or_404(QuestionRun, session=session, order=order)
     qrun.start_now()
+    # Refresh z databáze, aby měl aktuální hodnoty
+    qrun.refresh_from_db()
+    
+    # Odeslat socket.io událost přímo s order - musí být až po uložení
+    from .socketio_handler import get_socketio_client
+    try:
+        client = get_socketio_client()
+        if client and client.connected:
+            data = {
+                'hash': session.hash,
+                'state': 'question',
+                'order': order
+            }
+            client.emit('broadcast_session_state', data)
+    except Exception:
+        pass
+    
+    # Také zavolat send_session_status pro jistotu (hledá aktuální otázku)
+    from .socketio_handler import send_session_status
+    send_session_status(session.hash)
     remaining = max(0, int((qrun.ends_at - timezone.now()).total_seconds())) if qrun.ends_at else 0
     is_host = True
     total_participants = session.participants.count()
@@ -342,7 +362,13 @@ def session_submit_answer(request, hash, order):
     participant, _ = Participant.objects.get_or_create(session=session, user=request.user, defaults={"display_name": request.user.username})
     if request.method == "POST":
         answer_id = request.POST.get("answer_id")
-        if answer_id and timezone.now() <= (qrun.ends_at or timezone.now()):
+        # Kontrola času: 
+        # - Pokud starts_at je None, otázka ještě neběží - nelze odpovědět
+        # - Pokud ends_at je None, otázka nemá časový limit - může odpovědět
+        # - Pokud ends_at existuje, musí být ještě v čase
+        can_answer = qrun.starts_at is not None and (qrun.ends_at is None or timezone.now() <= qrun.ends_at)
+        
+        if answer_id and can_answer:
             existing = Response.objects.filter(question_run=qrun, participant=participant).exists()
             if not existing:
                 answer = get_object_or_404(Answer, id=answer_id, question=qrun.question)
@@ -358,25 +384,43 @@ def session_submit_answer(request, hash, order):
                 if total_participants > 0 and answered_count >= total_participants and not qrun.ends_at:
                     qrun.ends_at = timezone.now()
                     qrun.save(update_fields=["ends_at"])
+                
+                # Odeslat socket.io aktualizaci
+                from .socketio_handler import send_answer_update
+                send_answer_update(session.hash, qrun.order)
+            else:
+                messages.info(request, "Už jsi odpověděl na tuto otázku.")
+        elif not can_answer:
+            if qrun.starts_at is None:
+                messages.error(request, "Otázka ještě neběží. Počkejte, až učitel spustí otázku.")
+            else:
+                messages.error(request, "Čas na odpověď vypršel.")
         return redirect("session_question_view", hash=hash, order=order)
     return redirect("session_lobby", hash=hash)
 
 
 @login_required
 def session_question_view(request, hash, order):
-    session = get_object_or_404(QuizSession, hash=hash)
+    session = get_object_or_404(QuizSession, hash=hash, is_active=True)
     qrun = get_object_or_404(QuestionRun, session=session, order=order)
     remaining = max(0, int((qrun.ends_at - timezone.now()).total_seconds())) if qrun.ends_at else 0
     is_host = request.user == session.host
+    # Kontrola, jestli otázka už běží
+    question_started = qrun.starts_at is not None
     total_participants = session.participants.count()
     answered_count = qrun.responses.values("participant_id").distinct().count()
     all_answered = total_participants > 0 and answered_count >= total_participants
     next_exists = QuestionRun.objects.filter(session=session, order=order + 1).exists()
     has_answered = False
+    participant = None
     if not is_host and request.user.is_authenticated:
-        participant = Participant.objects.filter(session=session, user=request.user).first()
-        if participant:
-            has_answered = qrun.responses.filter(participant=participant).exists()
+        # Vytvoř participant pokud neexistuje (student se může připojit přímo na otázku)
+        participant, _ = Participant.objects.get_or_create(
+            session=session, 
+            user=request.user, 
+            defaults={"display_name": request.user.username}
+        )
+        has_answered = qrun.responses.filter(participant=participant).exists()
     
     # Statistiky odpovědí pro učitele
     answer_stats = {}
@@ -415,6 +459,7 @@ def session_question_view(request, hash, order):
             "qrun": qrun,
             "remaining": remaining,
             "is_host": is_host,
+            "question_started": question_started,
             "total_participants": total_participants,
             "answered_count": answered_count,
             "all_answered": all_answered,
@@ -458,9 +503,45 @@ def session_status(request, hash):
         .order_by("order")
         .last()
     )
+    # Vždy vracet počet účastníků (pro lobby refresh)
+    total_participants = session.participants.count()
+    
     if current:
-        return JsonResponse({"state": "question", "order": current.order})
-    return JsonResponse({"state": "waiting"})
+        response_data = {
+            "state": "question", 
+            "order": current.order,
+            "total_participants": total_participants
+        }
+        
+        # Pro učitele: přidat statistiky odpovědí
+        if request.user == session.host:
+            answer_stats = {}
+            correct_answer_ids = []
+            for answer in current.question.answers.all():
+                count = current.responses.filter(answer=answer).count()
+                answer_stats[str(answer.id)] = count
+                if answer.is_correct:
+                    correct_answer_ids.append(str(answer.id))
+            
+            answered_count = current.responses.values("participant_id").distinct().count()
+            all_answered = total_participants > 0 and answered_count >= total_participants
+            
+            remaining = max(0, int((current.ends_at - timezone.now()).total_seconds())) if current.ends_at else 0
+            
+            response_data.update({
+                "answered_count": answered_count,
+                "total_participants": total_participants,
+                "all_answered": all_answered,
+                "answer_stats": answer_stats,
+                "correct_answer_ids": correct_answer_ids,  # Přidat seznam správných odpovědí
+                "remaining": remaining
+            })
+        
+        return JsonResponse(response_data)
+    return JsonResponse({
+        "state": "waiting",
+        "total_participants": total_participants
+    })
 
 
 @teacher_required
@@ -469,6 +550,11 @@ def session_finish(request, hash):
     session.is_active = False
     session.finished_at = timezone.now()
     session.save(update_fields=["is_active", "finished_at"])
+    
+    # Odeslat socket.io událost
+    from .socketio_handler import send_session_status
+    send_session_status(session.hash)
+    
     return redirect("session_results", hash=hash)
 
 

@@ -6,6 +6,26 @@
   
   {% if is_host %}
     {# Teacher view #}
+    <script>
+      // Automaticky refreshovat stránku učitele každé 2 sekundy, aby viděl nové účastníky
+      (function() {
+        let lastParticipantCount = {{ session.participants.count }};
+        setInterval(async function() {
+          try {
+            const res = await fetch("{% url 'session_status' session.hash %}", { 
+              headers: { 'X-Requested-With': 'XMLHttpRequest' } 
+            });
+            if (!res.ok) return;
+            const data = await res.json();
+            if (data.total_participants !== undefined && data.total_participants !== lastParticipantCount) {
+              location.reload();
+            }
+          } catch (e) {
+            // ignore
+          }
+        }, 2000); // Kontrolovat každé 2 sekundy
+      })();
+    </script>
     <h3>Účastníci</h3>
     <ul>
       {% for p in session.participants.all %}
@@ -39,25 +59,65 @@
       <p><em>Pokud ještě žádná neběží, uvidíte tuto lobby.</em></p>
     </div>
     <script>
-      (function() {
+      function initSocketIO() {
         const hash = "{{ session.hash }}";
-        async function tick() {
-          try {
-            const res = await fetch("{% url 'session_status' session.hash %}", { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
-            if (!res.ok) return;
-            const data = await res.json();
-            if (data.state === 'finished') {
-              window.location.href = "{% url 'session_results' session.hash %}";
-              return;
-            }
-            if (data.state === 'question') {
-              window.location.href = "/session/" + hash + "/q/" + data.order + "/";
-              return;
-            }
-          } catch (e) { /* ignore */ }
+        
+        if (typeof io === 'undefined') {
+          setTimeout(initSocketIO, 100);
+          return;
         }
-        setInterval(tick, 2000);
-      })();
+        
+        const socket = io('http://localhost:8001', {
+          transports: ['websocket', 'polling'],
+          reconnection: true,
+          reconnectionDelay: 1000,
+          reconnectionAttempts: 5
+        });
+        
+        socket.on('connect', function() {
+          socket.emit('join_session', {hash: hash});
+        });
+        
+        socket.on('session_state', function(data) {
+          if (data.state === 'finished') {
+            window.location.href = "{% url 'session_results' session.hash %}";
+            return;
+          }
+          if (data.state === 'question') {
+            if (data.order !== undefined && data.order !== null) {
+              window.location.href = "/session/" + hash + "/q/" + data.order + "/";
+            }
+            return;
+          }
+        });
+        
+        socket.on('disconnect', function() {
+          const fallback = setInterval(async function() {
+            try {
+              const res = await fetch("{% url 'session_status' session.hash %}", { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+              if (!res.ok) return;
+              const data = await res.json();
+              if (data.state === 'finished') {
+                clearInterval(fallback);
+                window.location.href = "{% url 'session_results' session.hash %}";
+              } else if (data.state === 'question') {
+                clearInterval(fallback);
+                window.location.href = "/session/" + hash + "/q/" + data.order + "/";
+              }
+            } catch (e) { 
+              // ignore
+            }
+          }, 2000);
+        });
+      }
+      
+      // Spustit po načtení stránky
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initSocketIO);
+      } else {
+        // Stránka už je načtená
+        initSocketIO();
+      }
     </script>
     <h3>Další účastníci</h3>
     <ul>

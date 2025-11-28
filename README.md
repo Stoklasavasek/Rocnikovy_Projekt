@@ -89,6 +89,30 @@ Volitelně můžeš vytvořit i diagram (Mermaid/obrázek). Pokud nechceš řeš
 - Wagtail oprávnění nastav ve skupinách podle potřeby (přístup do Wagtail adminu, práva ke stránkám, dokumentům a obrázkům).
 
 
-socekt io 
-hash USL - genrator hash
-vyhodcovani postupne mezi otazkami
+### Socket.IO - Real-time komunikace
+
+Aplikace používá Socket.IO pro real-time aktualizace během kvízů.
+
+**Spuštění:**
+
+1. Spusť Django server (port 8000):
+```bash
+python manage.py runserver
+```
+
+2. V **samostatném terminálu** spusť Socket.IO server (port 8001):
+```bash
+python socketio_server.py
+```
+
+**Funkce:**
+- Real-time aktualizace stavu session (waiting/question/finished)
+- Real-time aktualizace statistik odpovědí pro učitele
+- Automatické přesměrování při změně otázky
+- Fallback na polling pokud Socket.IO není dostupný
+
+**Poznámka:** Pokud Socket.IO server není spuštěn, aplikace automaticky přejde na polling (HTTP requesty každé 2-3 sekundy).
+
+### Implementované funkce
+- hash URL - generátor hash pro session URL
+- vyhodnocování postupně mezi otázkami
