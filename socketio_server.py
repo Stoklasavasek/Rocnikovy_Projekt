@@ -125,5 +125,6 @@ def broadcast_answer_update(sid, data):
 
 if __name__ == '__main__':
     # Spustit socket.io server na portu 8001
-    eventlet.wsgi.server(eventlet.listen(('', 8001)), app)
+    # '0.0.0.0' umožní připojení zvenku kontejneru
+    eventlet.wsgi.server(eventlet.listen(('0.0.0.0', 8001)), app)
 

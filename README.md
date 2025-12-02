@@ -17,7 +17,100 @@ Odkaz inspirace/kontext: [README v repozitáři Rocnikovy_Projekt](https://githu
 - Databáze: SQLite (výchozí, pro produkci doporučen PostgreSQL)
 - Autentizace: Django auth (s možností rozšíření o `django-allauth`)
 
-### Rychlý start (lokálně)
+### Rychlý start
+
+#### Varianta A: S Dockerem (doporučeno - nejjednodušší)
+
+**Instalace Dockeru přes terminál:**
+
+**macOS:**
+```bash
+# 1. Nainstalovat Homebrew (pokud ho nemáš)
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# 2. Nainstalovat Docker Desktop
+brew install --cask docker
+
+# 3. Spustit Docker Desktop (poprvé musíš spustit aplikaci ručně)
+open /Applications/Docker.app
+
+# 4. Počkat, až se Docker spustí (ikona v menu bar)
+```
+
+**Linux (Ubuntu/Debian):**
+```bash
+# 1. Aktualizovat balíčky
+sudo apt update
+
+# 2. Nainstalovat Docker
+sudo apt install docker.io docker-compose -y
+
+# 3. Spustit Docker službu
+sudo systemctl start docker
+sudo systemctl enable docker
+
+# 4. Přidat uživatele do docker skupiny (aby nemusel sudo)
+sudo usermod -aG docker $USER
+
+# 5. Odhlásit se a znovu přihlásit (nebo restartovat terminál)
+# Pak už můžeš používat docker bez sudo
+```
+
+**Windows (WSL2):**
+```bash
+# 1. Nainstalovat WSL2 (v PowerShell jako admin)
+wsl --install
+
+# 2. Restartovat počítač
+
+# 3. V WSL terminálu nainstalovat Docker
+sudo apt update
+sudo apt install docker.io docker-compose -y
+
+# 4. Spustit Docker službu
+sudo service docker start
+```
+
+**Ověření instalace:**
+```bash
+docker --version
+docker-compose --version
+```
+
+Pokud příkazy fungují, Docker je nainstalovaný!
+
+**Postup po instalaci Dockeru:**
+```bash
+# 1. Stáhnout projekt
+git clone <repo-url>
+cd krasa
+
+# 2. Spustit vše jedním příkazem
+docker-compose up
+```
+
+Docker automaticky:
+- Postaví Docker image
+- Spustí PostgreSQL databázi
+- Spustí Django server (port 8000)
+- Spustí Socket.IO server (port 8001)
+
+Aplikace bude dostupná na: `http://localhost:8000`
+
+**Pro zastavení:**
+```bash
+docker-compose down
+```
+
+---
+
+#### Varianta B: Bez Dockeru (klasický způsob)
+
+**Požadavky:**
+- Python 3.9+
+- PostgreSQL (volitelně, výchozí je SQLite)
+
+**Postup:**
 1) Vytvoření a aktivace virtuálního prostředí
 ```bash
 python3 -m venv .venv
@@ -34,9 +127,16 @@ pip install -r requirements.txt
 python manage.py migrate
 python manage.py runserver
 ```
+
+4) V **samostatném terminálu** spustit Socket.IO server:
+```bash
+source .venv/bin/activate
+python socketio_server.py
+```
+
 Aplikace poběží na `http://127.0.0.1:8000/`.
 
-4) Administrátor (superuser)
+5) Administrátor (superuser)
 ```bash
 python manage.py createsuperuser
 ```
@@ -111,7 +211,6 @@ python socketio_server.py
 - Automatické přesměrování při změně otázky
 - Fallback na polling pokud Socket.IO není dostupný
 
-**Poznámka:** Pokud Socket.IO server není spuštěn, aplikace automaticky přejde na polling (HTTP requesty každé 2-3 sekundy).
 
 ### Implementované funkce
 - hash URL - generátor hash pro session URL

@@ -8,4 +8,5 @@ media/
 *.env
 node_modules/
 static/
+data/
 

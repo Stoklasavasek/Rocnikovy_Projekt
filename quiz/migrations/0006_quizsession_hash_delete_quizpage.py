@@ -22,6 +22,32 @@ def populate_hash_values(apps, schema_editor):
             session.save(update_fields=['hash'])
 
 
+def create_unique_index_if_not_exists(apps, schema_editor):
+    """Vytvoří unique index pouze pokud neexistuje"""
+    db_alias = schema_editor.connection.alias
+    with schema_editor.connection.cursor() as cursor:
+        # Zkontrolovat, jestli index už existuje
+        cursor.execute("""
+            SELECT 1 FROM pg_indexes 
+            WHERE tablename = 'quiz_quizsession' 
+            AND indexname = 'quiz_quizsession_hash_key'
+        """)
+        if not cursor.fetchone():
+            # Vytvořit unique index
+            cursor.execute("""
+                CREATE UNIQUE INDEX quiz_quizsession_hash_key 
+                ON quiz_quizsession (hash)
+                WHERE hash IS NOT NULL
+            """)
+
+
+def drop_unique_index_if_exists(apps, schema_editor):
+    """Smaže unique index pokud existuje"""
+    db_alias = schema_editor.connection.alias
+    with schema_editor.connection.cursor() as cursor:
+        cursor.execute("DROP INDEX IF EXISTS quiz_quizsession_hash_key")
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -29,19 +55,21 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        # Přidat sloupec hash bez unique constraintu
+        # Přidat sloupec hash bez indexu (index přidáme ručně)
         migrations.AddField(
             model_name='quizsession',
             name='hash',
-            field=models.CharField(blank=True, db_index=True, max_length=64, null=True),
+            field=models.CharField(blank=True, db_index=False, max_length=64, null=True),
         ),
         # Vyplnit existující záznamy
         migrations.RunPython(populate_hash_values, migrations.RunPython.noop),
-        # Přidat unique constraint
+        # Přidat unique index ručně
+        migrations.RunPython(create_unique_index_if_not_exists, drop_unique_index_if_exists),
+        # Aktualizovat model, aby Django vědělo o unique constraintu
         migrations.AlterField(
             model_name='quizsession',
             name='hash',
-            field=models.CharField(blank=True, db_index=True, max_length=64, unique=True),
+            field=models.CharField(blank=True, db_index=False, max_length=64, null=True, unique=True),
         ),
         migrations.DeleteModel(
             name='QuizPage',

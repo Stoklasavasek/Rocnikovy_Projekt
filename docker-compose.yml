@@ -15,8 +15,31 @@ services:
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U kahoot -d kahoot"]
+      test: ["CMD-SHELL", "pg_isready -U kahoot_user -d kahoot"]
       interval: 10s
       timeout: 5s
       retries: 5
+
+  web:
+    build: .
+    container_name: kahoot_app
+    restart: unless-stopped
+    ports:
+      - "8000:8000"  # Django
+      - "8001:8001"  # Socket.IO
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # PostgreSQL nastavení - aktivní pro Docker
+      DB_ENGINE: django.db.backends.postgresql
+      DB_NAME: kahoot
+      DB_USER: kahoot_user
+      DB_PASSWORD: kahoot_password
+      DB_HOST: db
+      DB_PORT: 5432
+    volumes:
+      - ./media:/app/media
+      - ./static:/app/static
+    command: /app/docker-entrypoint.sh
 
