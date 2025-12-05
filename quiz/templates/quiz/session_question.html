@@ -1,11 +1,12 @@
 {% extends "base.html" %}
 {% load quiz_tags %}
 {% block content %}
-<div style="max-width:800px;margin:24px auto;padding:0 16px;">
-  <h1>{{ session.quiz.title }}</h1>
-  <h2>Otázka {{ qrun.order }}: {{ qrun.question.text }}</h2>
+<div class="container quiz-container">
+  <div class="quiz-icon">📚</div>
+  <h1 class="quiz-title">{{ session.quiz.title }}</h1>
+  <h2 class="quiz-question">❓ Otázka {{ qrun.order }}: {{ qrun.question.text }}</h2>
   {% if remaining %}
-    <p>Zbývající čas: <span class="remaining-time">{{ remaining }}</span> s <span id="timer-status" style="color:green; font-weight:bold;"></span></p>
+    <p class="timer-display">⏱ Zbývající čas: <span class="remaining-time">{{ remaining }}</span> s <span id="timer-status" class="timer-status"></span></p>
   {% endif %}
   <script>
     (function() {
@@ -186,25 +187,25 @@
     })();
   </script>
   {% if is_host %}
-    <div style="margin:16px 0; padding:16px; background:#f7f7f7; border-radius:8px;">
-      <h3>Statistiky odpovědí</h3>
-      <p><strong>Odpovědělo: <span class="answered-count">{{ answered_count }}</span> / {{ total_participants }}</strong></p>
+    <div class="card pad stats-card">
+      <h3>📊 Statistiky odpovědí</h3>
+      <p><strong>Odpovědělo: <span class="answered-count stats-badge">{{ answered_count }}</span> / <span class="stats-badge">{{ total_participants }}</span></strong></p>
       
       {% if all_answered %}
-      <div class="stats-section" style="margin-top:20px; padding:16px; background:#fff; border-radius:8px;">
-        <h4 style="margin-top:0;">Výsledky podle odpovědí:</h4>
+      <div class="stats-section" style="margin-top:20px; padding:20px; background:linear-gradient(135deg,#fff 0%,#f9fafb 100%); border-radius:12px; border:2px solid var(--border);">
+        <h4>✅ Výsledky podle odpovědí:</h4>
         <ul style="list-style:none; padding:0;">
           {% for answer in qrun.question.answers.all %}
             {% with stats=answer_stats|get_item:answer.id %}
-            <li data-answer-id="{{ answer.id }}" style="margin:12px 0; padding:12px; {% if answer.is_correct %}background:#e8f5e9; border-left:4px solid #4CAF50;{% else %}background:#f9f9f9; border-left:4px solid #2196F3;{% endif %} border-radius:6px;">
-              <div style="display:flex; justify-content:space-between; align-items:center;">
-                <div>
+            <li data-answer-id="{{ answer.id }}" class="answer-item {% if answer.is_correct %}correct{% else %}wrong{% endif %}">
+              <div style="display:flex; justify-content:space-between; align-items:center;flex-wrap:wrap;gap:8px;">
+                <div style="flex:1;min-width:200px;">
                   <strong>{{ answer.text }}</strong>
                   {% if answer.is_correct %}
                     <span style="color:#2e7d32; margin-left:8px; font-size:18px;">✓</span>
                   {% endif %}
                 </div>
-                <div class="stats-number" style="font-size:24px; font-weight:bold; {% if answer.is_correct %}color:#2e7d32;{% else %}color:#2196F3;{% endif %}">
+                <div class="stats-number" style="font-size:clamp(20px, 4vw, 24px); font-weight:bold; {% if answer.is_correct %}color:#2e7d32;{% else %}color:#2196F3;{% endif %}">
                   {% if stats %}{{ stats.count }}{% else %}0{% endif %}
                 </div>
               </div>
@@ -215,18 +216,18 @@
       </div>
       {% else %}
       {# Zobrazit základní statistiky i když ještě neodpověděli všichni - BEZ zobrazení správné odpovědi #}
-      <div class="stats-section" style="margin-top:20px; padding:16px; background:#fff; border-radius:8px; opacity:0.7;">
-        <h4 style="margin-top:0;">Průběžné výsledky:</h4>
+      <div class="stats-section waiting" style="margin-top:20px; padding:20px; background:linear-gradient(135deg,#f3f4f6 0%,#e5e7eb 100%); border-radius:12px; border:2px solid var(--border); opacity:0.9;">
+        <h4>⏳ Průběžné výsledky:</h4>
         <ul style="list-style:none; padding:0;">
           {% for answer in qrun.question.answers.all %}
             {% with stats=answer_stats|get_item:answer.id %}
-            <li data-answer-id="{{ answer.id }}" style="margin:12px 0; padding:12px; background:#f9f9f9; border-left:4px solid #2196F3; border-radius:6px;">
-              <div style="display:flex; justify-content:space-between; align-items:center;">
+            <li data-answer-id="{{ answer.id }}" class="answer-item waiting">
+              <div style="display:flex; justify-content:space-between; align-items:center;flex-wrap:wrap;">
                 <div>
                   <strong>{{ answer.text }}</strong>
                   {# NESMÍ se zobrazit správná odpověď před skončením otázky #}
                 </div>
-                <div class="stats-number" style="font-size:24px; font-weight:bold; color:#2196F3;">
+                <div class="stats-number" style="font-size:clamp(20px, 4vw, 24px); font-weight:bold; color:#2196F3;">
                   {% if stats %}{{ stats.count }}{% else %}0{% endif %}
                 </div>
               </div>
@@ -240,23 +241,23 @@
       
       {% if participant_responses %}
       <div style="margin-top:20px;">
-        <h4 style="margin-top:0;">Kdo jak odpověděl:</h4>
+        <h4 style="margin-top:0;font-size:clamp(16px, 2.5vw, 18px);">Kdo jak odpověděl:</h4>
         
         {% if correct_responses %}
-        <div style="margin-top:20px; padding:16px; background:#e8f5e9; border-radius:8px; border:2px solid #4CAF50;">
-          <h5 style="margin-top:0; color:#2e7d32;">✓ Správně odpověděli:</h5>
-          <table style="width:100%; border-collapse:collapse;">
+        <div style="margin-top:20px; padding:20px; background:linear-gradient(135deg,#d1fae5 0%,#a7f3d0 100%); border-radius:12px; border:3px solid var(--success);overflow-x:auto;box-shadow:var(--shadow);">
+          <h5 style="margin-top:0; color:#065f46;font-size:18px;">✅ Správně odpověděli:</h5>
+          <table class="results-table">
             <thead>
               <tr style="border-bottom:2px solid #4CAF50;">
-                <th style="text-align:left; padding:8px;">Účastník</th>
-                <th style="text-align:left; padding:8px;">Odpověď</th>
+                <th>Účastník</th>
+                <th>Odpověď</th>
               </tr>
             </thead>
             <tbody>
               {% for response in correct_responses %}
               <tr style="border-bottom:1px solid #c8e6c9;">
-                <td style="padding:8px;">{{ response.participant.display_name }}</td>
-                <td style="padding:8px;">{{ response.answer.text }}</td>
+                <td>{{ response.participant.display_name }}</td>
+                <td>{{ response.answer.text }}</td>
               </tr>
               {% endfor %}
             </tbody>
@@ -265,20 +266,20 @@
         {% endif %}
         
         {% if wrong_responses %}
-        <div style="margin-top:20px; padding:16px; background:#ffebee; border-radius:8px; border:2px solid #f44336;">
-          <h5 style="margin-top:0; color:#c62828;">✗ Špatně odpověděli:</h5>
-          <table style="width:100%; border-collapse:collapse;">
+        <div style="margin-top:20px; padding:20px; background:linear-gradient(135deg,#fee2e2 0%,#fecaca 100%); border-radius:12px; border:3px solid var(--error);overflow-x:auto;box-shadow:var(--shadow);">
+          <h5 style="margin-top:0; color:#991b1b;font-size:18px;">❌ Špatně odpověděli:</h5>
+          <table class="results-table">
             <thead>
               <tr style="border-bottom:2px solid #f44336;">
-                <th style="text-align:left; padding:8px;">Účastník</th>
-                <th style="text-align:left; padding:8px;">Odpověď</th>
+                <th>Účastník</th>
+                <th>Odpověď</th>
               </tr>
             </thead>
             <tbody>
               {% for response in wrong_responses %}
               <tr style="border-bottom:1px solid #ffcdd2;">
-                <td style="padding:8px;">{{ response.participant.display_name }}</td>
-                <td style="padding:8px;">{{ response.answer.text }}</td>
+                <td>{{ response.participant.display_name }}</td>
+                <td>{{ response.answer.text }}</td>
               </tr>
               {% endfor %}
             </tbody>
@@ -289,16 +290,16 @@
       {% endif %}
       
       {% if all_answered or remaining == 0 %}
-        <div style="margin-top:20px; padding-top:16px; border-top:2px solid #ddd;">
+        <div style="margin-top:24px; padding-top:24px; border-top:3px solid var(--border);">
           {% if next_exists %}
             <a href="{% url 'session_start_question' session.hash qrun.order|add:1 %}" 
-               style="display:inline-block; padding:12px 24px; background:#4CAF50; color:white; text-decoration:none; border-radius:6px; font-weight:bold;">
-              Přejít na další otázku
+               class="btn primary success" style="display:block;text-align:center;padding:16px;font-size:18px;">
+              ➡️ Přejít na další otázku
             </a>
           {% else %}
             <a href="{% url 'session_finish' session.hash %}" 
-               style="display:inline-block; padding:12px 24px; background:#f44336; color:white; text-decoration:none; border-radius:6px; font-weight:bold;">
-              Ukončit sezení
+               class="btn primary danger" style="display:block;text-align:center;padding:16px;font-size:18px;">
+              🏁 Ukončit sezení
             </a>
           {% endif %}
         </div>
@@ -306,27 +307,27 @@
     </div>
   {% else %}
     {% if not question_started %}
-      <div style="margin:16px 0; padding:12px; background:#fff3cd; border-radius:8px; border-left:4px solid #ffc107;">
-        <p><strong>Otázka ještě neběží.</strong> Počkejte, až učitel spustí otázku.</p>
+      <div style="margin:24px 0; padding:20px; background:linear-gradient(135deg,#fef3c7 0%,#fde68a 100%); border-radius:12px; border:3px solid var(--warning);box-shadow:var(--shadow);">
+        <p style="margin:0;font-size:18px;font-weight:600;color:#92400e;"><strong>⏸️ Otázka ještě neběží.</strong> Počkejte, až učitel spustí otázku.</p>
       </div>
     {% elif has_answered %}
-      <div style="margin:16px 0; padding:12px; background:#f0f0f0; border-radius:8px;">
-        <p>Odpověď přijata. Čekejte, než odpoví ostatní studenti nebo učitel spustí další otázku.</p>
+      <div style="margin:24px 0; padding:20px; background:linear-gradient(135deg,#e0e7ff 0%,#c7d2fe 100%); border-radius:12px; border:3px solid var(--primary);box-shadow:var(--shadow);">
+        <p style="margin:0;font-size:18px;font-weight:600;color:#3730a3;">✅ Odpověď přijata. Čekejte, než odpoví ostatní studenti nebo učitel spustí další otázku.</p>
       </div>
     {% else %}
-    <form action="{% url 'session_submit_answer' session.hash qrun.order %}" method="post">
+    <form action="{% url 'session_submit_answer' session.hash qrun.order %}" method="post" style="margin-top:24px;">
       {% csrf_token %}
-      <ul>
+      <ul style="list-style:none;padding:0;display:flex;flex-direction:column;gap:16px;">
         {% for a in qrun.question.answers.all %}
-          <li>
-            <label>
+          <li style="margin:0;">
+            <label class="answer-label">
               <input type="radio" name="answer_id" value="{{ a.id }}" required>
-              {{ a.text }}
+              <span>{{ a.text }}</span>
             </label>
           </li>
         {% endfor %}
       </ul>
-      <button type="submit">Odeslat</button>
+      <button type="submit" class="btn primary" style="margin-top:24px;width:100%;padding:18px;font-size:18px;font-weight:bold;">📤 Odeslat odpověď</button>
     </form>
     {% endif %}
   {% endif %}

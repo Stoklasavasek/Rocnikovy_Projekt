@@ -41,5 +41,10 @@ services:
     volumes:
       - ./media:/app/media
       - ./static:/app/static
+      - ./kahootapp/static:/app/kahootapp/static
+      - ./home/static:/app/home/static
+      - ./kahootapp/templates:/app/kahootapp/templates
+      - ./quiz/templates:/app/quiz/templates
+      - ./home/templates:/app/home/templates
     command: /app/docker-entrypoint.sh
 

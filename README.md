@@ -85,22 +85,35 @@ Pokud příkazy fungují, Docker je nainstalovaný!
 git clone <repo-url>
 cd krasa
 
-# 2. Spustit vše jedním příkazem
+# 2. První spuštění (stáhne images a nainstaluje vše)
+docker-compose up --build
+```
+
+**Opakované spuštění:**
+```bash
 docker-compose up
 ```
 
+**Zastavení:**
+```bash
+docker-compose down
+```
+
+**Zastavení a smazání databáze:**
+```bash
+docker-compose down -v
+rm -rf data/
+```
+
 Docker automaticky:
-- Postaví Docker image
+- Postaví Docker image (pouze při prvním spuštění nebo při změně Dockerfile/requirements.txt)
 - Spustí PostgreSQL databázi
 - Spustí Django server (port 8000)
 - Spustí Socket.IO server (port 8001)
 
 Aplikace bude dostupná na: `http://localhost:8000`
 
-**Pro zastavení:**
-```bash
-docker-compose down
-```
+**Poznámka:** `--build` je potřeba jen poprvé nebo když změníš `Dockerfile` nebo `requirements.txt`. Další spuštění jsou rychlá díky Docker cache.
 
 ---
 

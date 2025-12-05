@@ -34,24 +34,31 @@
     <body class="{% block body_class %}{% endblock %}">
         {# {% wagtailuserbar %} #}
 
-        <header style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #eee;">
+        <header>
             <div>
-                <a href="/" style="text-decoration:none;color:inherit;font-weight:600;">Kahoot pro školu</a>
+                <a href="/">Kahoot pro školu</a>
             </div>
+            <button class="mobile-menu-toggle" onclick="document.querySelector('header nav').classList.toggle('active')">☰</button>
             <nav>
                 {% if request.user.is_authenticated %}
-                    <span style="margin-right:12px;">{{ request.user.get_full_name|default:request.user.username }}</span>
-                    <a href="{% url 'quiz_list' %}" style="margin-right:12px;">Kvízy</a>
-                    <a href="{% url 'quiz_join' %}" style="margin-right:12px;">Připojit se k kvízu</a>
-                    <a href="{% url 'account_logout' %}" style="padding:8px 12px;border:1px solid #ccc;border-radius:6px;">Odhlásit</a>
+                    <span>{{ request.user.get_full_name|default:request.user.username }}</span>
+                    <a href="{% url 'quiz_list' %}">Kvízy</a>
+                    <a href="{% url 'quiz_join' %}">Připojit se k kvízu</a>
+                    <a href="{% url 'account_logout' %}" class="btn">Odhlásit</a>
                 {% else %}
-                    <a href="{% url 'account_login' %}" style="margin-right:12px;">Přihlášení</a>
-                    <a href="{% url 'account_signup' %}" style="padding:8px 12px;border:1px solid #1877f2;border-radius:6px;color:#1877f2;">Registrace</a>
+                    <a href="{% url 'account_login' %}">Přihlášení</a>
+                    <a href="{% url 'account_signup' %}" class="btn primary">Registrace</a>
                 {% endif %}
             </nav>
         </header>
 
         {% block content %}{% endblock %}
+
+        <footer>
+            <p><strong>Václav Stoklasa</strong></p>
+            <p>SSPU OPAVA</p>
+            <p>Opava, 2025</p>
+        </footer>
 
         {# Global javascript #}
         <script type="text/javascript" src="{% static 'js/kahootapp.js' %}"></script>

@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 {% block content %}
-<div style="max-width:800px;margin:24px auto;padding:0 16px;">
-  <h1>Lobby: {{ session.quiz.title }}</h1>
-  <p>Kód pro připojení: <strong>{{ session.code }}</strong></p>
+<div class="container" style="max-width:800px;">
+  <h1 style="font-size:clamp(20px, 4vw, 28px);margin-bottom:8px;">Lobby: {{ session.quiz.title }}</h1>
+  <p style="font-size:clamp(14px, 2.5vw, 16px);margin-bottom:20px;">Kód pro připojení: <strong style="font-size:clamp(18px, 3vw, 24px);color:var(--primary);">{{ session.code }}</strong></p>
   
   {% if is_host %}
     {# Teacher view #}
@@ -26,37 +26,41 @@
         }, 2000); // Kontrolovat každé 2 sekundy
       })();
     </script>
-    <h3>Účastníci</h3>
-    <ul>
-      {% for p in session.participants.all %}
-        <li>{{ p.display_name }}</li>
-      {% empty %}
-        <li>Zatím nikdo</li>
-      {% endfor %}
-    </ul>
-    <h3>Otázky</h3>
-    <ol>
-      {% for qrun in session.question_runs.all %}
-        <li>
-          {{ qrun.question.text }}
-          {% if not qrun.starts_at %}
-            — <a href="{% url 'session_start_question' session.hash qrun.order %}">Spustit</a>
-          {% else %}
-            — spuštěno
-          {% endif %}
-        </li>
-      {% endfor %}
-    </ol>
+    <div class="card pad" style="margin-bottom:20px;">
+      <h3 style="margin-top:0;font-size:clamp(18px, 3vw, 22px);">Účastníci</h3>
+      <ul style="list-style:none;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;">
+        {% for p in session.participants.all %}
+          <li style="padding:8px 12px;background:#f0f0f0;border-radius:6px;text-align:center;">{{ p.display_name }}</li>
+        {% empty %}
+          <li style="padding:8px 12px;color:var(--muted);">Zatím nikdo</li>
+        {% endfor %}
+      </ul>
+    </div>
+    <div class="card pad" style="margin-bottom:20px;">
+      <h3 style="margin-top:0;font-size:clamp(18px, 3vw, 22px);">Otázky</h3>
+      <ol style="padding-left:20px;">
+        {% for qrun in session.question_runs.all %}
+          <li style="margin:12px 0;padding:8px;background:#f9f9f9;border-radius:6px;">
+            <span style="font-size:clamp(14px, 2.5vw, 16px);">{{ qrun.question.text }}</span>
+            {% if not qrun.starts_at %}
+              <a href="{% url 'session_start_question' session.hash qrun.order %}" class="btn primary" style="margin-left:12px;padding:6px 12px;font-size:14px;">Spustit</a>
+            {% else %}
+              <span style="margin-left:12px;color:#4CAF50;font-weight:bold;">✓ spuštěno</span>
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ol>
+    </div>
     <p>
-      <a href="{% url 'session_finish' session.hash %}">Ukončit sezení</a>
+      <a href="{% url 'session_finish' session.hash %}" class="btn" style="background:#f44336;color:white;border-color:#f44336;padding:12px 24px;display:inline-block;">Ukončit sezení</a>
     </p>
   {% else %}
     {# Student view #}
     <p>Přihlášen jako: <strong>{{ participant.display_name }}</strong></p>
-    <div style="margin-top: 20px; padding: 20px; background: #f0f0f0; border-radius: 8px;">
-      <p>✅ Úspěšně jste se připojili!</p>
-      <p>Jakmile učitel spustí otázku, budete automaticky přesměrováni.</p>
-      <p><em>Pokud ještě žádná neběží, uvidíte tuto lobby.</em></p>
+    <div class="card pad" style="margin-top: 20px; background: #e8f5e9; border-left:4px solid #4CAF50;">
+      <p style="margin:0 0 8px 0;font-size:clamp(14px, 2.5vw, 16px);">✅ Úspěšně jste se připojili!</p>
+      <p style="margin:0 0 8px 0;font-size:clamp(14px, 2.5vw, 16px);">Jakmile učitel spustí otázku, budete automaticky přesměrováni.</p>
+      <p style="margin:0;font-size:clamp(13px, 2vw, 14px);"><em>Pokud ještě žádná neběží, uvidíte tuto lobby.</em></p>
     </div>
     <script>
       function initSocketIO() {
@@ -119,14 +123,18 @@
         initSocketIO();
       }
     </script>
-    <h3>Další účastníci</h3>
-    <ul>
-      {% for p in session.participants.all %}
-        <li>{{ p.display_name }}{% if p.id == participant.id %} (vy){% endif %}</li>
-      {% empty %}
-        <li>Zatím jste sami</li>
-      {% endfor %}
-    </ul>
+    <div class="card pad" style="margin-top:20px;">
+      <h3 style="margin-top:0;font-size:clamp(18px, 3vw, 22px);">Další účastníci</h3>
+      <ul style="list-style:none;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;">
+        {% for p in session.participants.all %}
+          <li style="padding:8px 12px;background:{% if p.id == participant.id %}#e3f2fd{% else %}#f0f0f0{% endif %};border-radius:6px;text-align:center;font-size:clamp(14px, 2.5vw, 16px);">
+            {{ p.display_name }}{% if p.id == participant.id %} <strong>(vy)</strong>{% endif %}
+          </li>
+        {% empty %}
+          <li style="padding:8px 12px;color:var(--muted);">Zatím jste sami</li>
+        {% endfor %}
+      </ul>
+    </div>
   {% endif %}
 </div>
 {% endblock %}
