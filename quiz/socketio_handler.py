@@ -19,12 +19,12 @@ def get_socketio_client():
         if socketio_client is None:
             socketio_client = socketio.Client()
             try:
-                socketio_client.connect('http://localhost:8001', wait_timeout=2)
+                socketio_client.connect('http://localhost:8001', wait_timeout=5, transports=['polling', 'websocket'])
             except Exception:
                 pass
         elif not socketio_client.connected:
             try:
-                socketio_client.connect('http://localhost:8001', wait_timeout=2)
+                socketio_client.connect('http://localhost:8001', wait_timeout=5, transports=['polling', 'websocket'])
             except Exception:
                 pass
         return socketio_client
@@ -103,7 +103,14 @@ def send_answer_update(session_hash, question_order):
             'answer_stats': answer_stats
         }
         
+        # Odeslat event na Socket.IO server
         client.emit('broadcast_answer_update', data)
-    except Exception:
+        # Pro jistotu počkat chvíli, aby se event odeslal
+        import time
+        time.sleep(0.1)
+    except Exception as e:
+        # Pro debug - v produkci odstranit
+        import sys
+        print(f"Error sending answer update: {e}", file=sys.stderr)
         pass
 
