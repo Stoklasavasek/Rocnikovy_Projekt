@@ -4,15 +4,6 @@
 {% block body_class %}template-quiz-create-full{% endblock %}
 
 {% block content %}
-{% if not is_teacher %}
-  <div style="max-width:900px;margin:24px auto;padding:24px;text-align:center;">
-    <h1>Přístup zamítnut</h1>
-    <p>Pouze učitelé a administrátoři mohou vytvářet kvízy.</p>
-    <a href="{% url 'quiz_list' %}" style="margin-top:16px;display:inline-block;padding:10px 20px;background:#2196F3;color:white;text-decoration:none;border-radius:4px;">
-      Zpet na seznam kvízů
-    </a>
-  </div>
-{% else %}
 <div style="max-width:900px;margin:24px auto;padding:0 16px;">
   <h1>{% if quiz %}Upravit kvíz{% else %}Vytvořit nový kvíz{% endif %}</h1>
   <p style="color:#666;margin-bottom:24px;">{% if quiz %}Upravte kvíz s otázkami a odpověďmi.{% else %}Vytvořte kvíz s otázkami a odpověďmi najednou.{% endif %} Můžete přidat více otázek kliknutím na tlačítko "Přidat otázku".</p>
@@ -243,6 +234,5 @@ if (document.readyState === 'loading') {
   box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 </style>
-{% endif %}
 {% endblock %}
 

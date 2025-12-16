@@ -13,7 +13,7 @@ def landing(request):
     is_teacher = user_is_teacher(request.user) if request.user.is_authenticated else False
     return render(request, "landing.html", {"is_teacher": is_teacher})
 
-@teacher_required
+@login_required
 def quiz_list(request):
     from .roles import user_is_teacher
     quizzes = Quiz.objects.filter(created_by=request.user) if request.user.is_authenticated else Quiz.objects.none()
@@ -73,7 +73,7 @@ def join_quiz_by_code(request):
     return render(request, "quiz/join.html")
 
 
-@teacher_required
+@login_required
 def quiz_create(request):
     from .roles import user_is_teacher
     is_teacher = user_is_teacher(request.user)
@@ -127,7 +127,7 @@ def quiz_create(request):
     return render(request, "quiz/quiz_create_full.html", {"quiz_title": "", "is_teacher": is_teacher, "quiz": None})
 
 
-@teacher_required
+@login_required
 def quiz_update(request, quiz_id):
     from .roles import user_is_teacher
     quiz = get_object_or_404(Quiz, id=quiz_id, created_by=request.user)
@@ -207,7 +207,7 @@ def quiz_update(request, quiz_id):
     })
 
 
-@teacher_required
+@login_required
 def quiz_questions(request, quiz_id):
     quiz = get_object_or_404(Quiz, id=quiz_id, created_by=request.user)
     if request.method == "POST":
@@ -221,7 +221,7 @@ def quiz_questions(request, quiz_id):
     return render(request, "quiz/questions_edit.html", {"quiz": quiz, "formset": formset})
 
 
-@teacher_required
+@login_required
 def question_answers(request, question_id):
     question = get_object_or_404(Question, id=question_id, quiz__created_by=request.user)
     if request.method == "POST":
@@ -235,7 +235,7 @@ def question_answers(request, question_id):
     return render(request, "quiz/answers_edit.html", {"question": question, "formset": formset})
 
 
-@teacher_required
+@login_required
 def quiz_delete(request, quiz_id):
     quiz = get_object_or_404(Quiz, id=quiz_id, created_by=request.user)
     if request.method == "POST":
@@ -245,7 +245,7 @@ def quiz_delete(request, quiz_id):
     return render(request, "quiz/delete.html", {"quiz": quiz})
 
 
-@teacher_required
+@login_required
 def session_create(request, quiz_id):
     quiz = get_object_or_404(Quiz, id=quiz_id, created_by=request.user)
     session = QuizSession.objects.create(quiz=quiz, host=request.user)
@@ -274,7 +274,7 @@ def session_lobby(request, hash):
     })
 
 
-@teacher_required
+@login_required
 def session_start_question(request, hash, order):
     session = get_object_or_404(QuizSession, hash=hash, host=request.user, is_active=True)
     qrun = get_object_or_404(QuestionRun, session=session, order=order)
@@ -544,7 +544,7 @@ def session_status(request, hash):
     })
 
 
-@teacher_required
+@login_required
 def session_finish(request, hash):
     session = get_object_or_404(QuizSession, hash=hash, host=request.user)
     session.is_active = False
@@ -580,7 +580,7 @@ def session_results(request, hash):
     )
 
 
-@teacher_required
+@login_required
 def session_results_csv(request, hash):
     session = get_object_or_404(QuizSession, hash=hash)
     if request.user != session.host:

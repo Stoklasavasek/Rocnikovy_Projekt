@@ -20,6 +20,7 @@ def create_default_groups(sender, **kwargs):
     ensure_role_groups_exist()
     try:
         teacher_group = Group.objects.get(name=TEACHER_GROUP)
+        student_group = Group.objects.get(name=STUDENT_GROUP)
         quiz_cts = ContentType.objects.filter(app_label="quiz", model__in=[
             "quiz", "question", "answer", "studentanswer",
         ])
@@ -34,7 +35,9 @@ def create_default_groups(sender, **kwargs):
             if not wanted_codenames:
                 continue
             perms = Permission.objects.filter(content_type=ct, codename__in=wanted_codenames)
+            # Přiřadit oprávnění učitelům i studentům
             teacher_group.permissions.add(*perms)
+            student_group.permissions.add(*perms)
     except Exception:
         pass
 
@@ -44,6 +47,6 @@ def assign_student_group_on_signup(request, user, **kwargs):
     ensure_role_groups_exist()
     student_group = Group.objects.get(name=STUDENT_GROUP)
     user.groups.add(student_group)
-    user.save(update_fields=["last_login"])  # touch user to trigger signals minimally
+    user.save(update_fields=["last_login"]) 
 
 

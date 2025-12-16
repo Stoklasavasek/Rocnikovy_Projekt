@@ -1,7 +1,6 @@
 services:
   db:
     image: postgres:16
-    pull_policy: if_not_present
     container_name: kahoot_postgres
     restart: unless-stopped
     environment:
