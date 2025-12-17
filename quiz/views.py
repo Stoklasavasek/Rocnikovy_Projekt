@@ -314,6 +314,7 @@ def session_start_question(request, hash, order):
     participant_responses = {}
     correct_responses = []
     wrong_responses = []
+    no_answer_responses = []
     for answer in qrun.question.answers.all():
         count = qrun.responses.filter(answer=answer).count()
         answer_stats[answer.id] = {
@@ -334,6 +335,12 @@ def session_start_question(request, hash, order):
             correct_responses.append(response_data)
         else:
             wrong_responses.append(response_data)
+
+    # Účastníci, kteří zatím neodpověděli (pro tabulku „Kdo jak odpověděl“)
+    responded_ids = set(participant_responses.keys())
+    for p in session.participants.all():
+        if p.id not in responded_ids:
+            no_answer_responses.append(p)
     
     return render(
         request,
@@ -348,9 +355,11 @@ def session_start_question(request, hash, order):
             "all_answered": all_answered,
             "next_exists": next_exists,
             "answer_stats": answer_stats,
+            "participants": session.participants.all(),
             "participant_responses": participant_responses,
             "correct_responses": correct_responses,
             "wrong_responses": wrong_responses,
+            "no_answer_responses": no_answer_responses,
         },
     )
 
@@ -407,6 +416,7 @@ def session_question_view(request, hash, order):
     session = get_object_or_404(QuizSession, hash=hash, is_active=True)
     qrun = get_object_or_404(QuestionRun, session=session, order=order)
     remaining = max(0, int((qrun.ends_at - timezone.now()).total_seconds())) if qrun.ends_at else 0
+    time_over = remaining == 0 and qrun.ends_at is not None and timezone.now() >= qrun.ends_at
     is_host = request.user == session.host
     # Kontrola, jestli otázka už běží
     question_started = qrun.starts_at is not None
@@ -430,6 +440,7 @@ def session_question_view(request, hash, order):
     participant_responses = {}
     correct_responses = []
     wrong_responses = []
+    no_answer_responses = []
     if is_host:
         # Počítání odpovědí pro každou možnost
         for answer in qrun.question.answers.all():
@@ -453,6 +464,12 @@ def session_question_view(request, hash, order):
                 correct_responses.append(response_data)
             else:
                 wrong_responses.append(response_data)
+        
+        # Účastníci, kteří zatím neodpověděli
+        responded_ids = set(participant_responses.keys())
+        for p in session.participants.all():
+            if p.id not in responded_ids:
+                no_answer_responses.append(p)
     
     return render(
         request,
@@ -461,6 +478,7 @@ def session_question_view(request, hash, order):
             "session": session,
             "qrun": qrun,
             "remaining": remaining,
+            "time_over": time_over,
             "is_host": is_host,
             "question_started": question_started,
             "total_participants": total_participants,
@@ -469,9 +487,11 @@ def session_question_view(request, hash, order):
             "next_exists": next_exists,
             "has_answered": has_answered,
             "answer_stats": answer_stats,
+            "participants": session.participants.all(),
             "participant_responses": participant_responses,
             "correct_responses": correct_responses,
             "wrong_responses": wrong_responses,
+            "no_answer_responses": no_answer_responses,
         },
     )
 

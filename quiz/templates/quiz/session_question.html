@@ -10,32 +10,23 @@
   {% endif %}
   <h2 class="quiz-question">Otázka {{ qrun.order }}: {{ qrun.question.text }}</h2>
   {% if remaining %}
-    <p class="timer-display">Zbývající čas: <span class="remaining-time">{{ remaining }}</span> s <span id="timer-status" class="timer-status"></span></p>
+    <p class="timer-display">Zbývající čas: <span class="remaining-time">{{ remaining }}</span> s</p>
   {% endif %}
   <script>
     (function() {
       // OKAMŽITĚ spustit timer - před vším ostatním!
       (function() {
         const remainingEl = document.querySelector('.remaining-time');
-        const timerStatusEl = document.getElementById('timer-status');
         let timerInterval = null;
         
         if (remainingEl) {
           let currentTime = parseInt(remainingEl.textContent.trim()) || 0;
-          
-          if (timerStatusEl) {
-            timerStatusEl.textContent = 'Timer běží';
-          }
           
           // Funkce pro zastavení timeru
           function stopTimer() {
             if (timerInterval) {
               clearInterval(timerInterval);
               timerInterval = null;
-            }
-            if (timerStatusEl) {
-              timerStatusEl.textContent = 'Timer zastaven';
-              timerStatusEl.style.color = 'gray';
             }
           }
           
@@ -45,46 +36,33 @@
           // Zkontrolovat, jestli už všichni odpověděli (učitel) nebo žák už odpověděl
           {% if is_host and all_answered %}
           // Pokud už všichni odpověděli, timer neběží
-          if (timerStatusEl) {
-            timerStatusEl.textContent = 'Všichni odpověděli';
-            timerStatusEl.style.color = 'green';
-          }
           {% elif not is_host and has_answered %}
           // Žák už odpověděl - zastavit timer
           stopTimer();
-          if (timerStatusEl) {
-            timerStatusEl.textContent = 'Odpověď odeslána';
-            timerStatusEl.style.color = 'green';
-          }
           {% else %}
           // Spustit timer
           timerInterval = setInterval(function() {
             if (currentTime > 0) {
               currentTime = currentTime - 1;
               remainingEl.textContent = currentTime;
-              if (timerStatusEl) {
-                timerStatusEl.style.opacity = timerStatusEl.style.opacity === '0.5' ? '1' : '0.5';
-              }
             } else {
               stopTimer();
-              if (timerStatusEl) {
-                timerStatusEl.textContent = 'Čas vypršel';
-                timerStatusEl.style.color = 'red';
-              }
+              {% if not is_host %}
+              var form = document.getElementById('answer-form');
+              var msg = document.getElementById('time-over-message');
+              if (form) form.style.display = 'none';
+              if (msg) msg.style.display = 'block';
+              {% endif %}
             }
           }, 1000);
           {% endif %}
-        } else {
-          if (timerStatusEl) {
-            timerStatusEl.textContent = '✗ Timer nenalezen';
-            timerStatusEl.style.color = 'red';
-          }
         }
       })();
       
       const hash = "{{ session.hash }}";
       const currentOrder = {{ qrun.order }};
       
+      {% if not is_host %}
       // Zkontrolovat, jestli je socket.io načtený
       if (typeof io === 'undefined') {
         // Fallback na polling
@@ -99,9 +77,6 @@
             } else if (data.state === 'question' && data.order !== currentOrder) {
               clearInterval(fallback);
               window.location.href = "/session/" + hash + "/q/" + data.order + "/";
-            } else if (data.state === 'waiting') {
-              clearInterval(fallback);
-              window.location.href = "{% url 'session_lobby' session.hash %}";
             }
           } catch (e) { /* ignore */ }
         }, 2000);
@@ -115,7 +90,6 @@
         reconnectionAttempts: 10
       });
       
-      {% if not is_host %}
       socket.on('disconnect', function() {
         // Fallback na polling pro studenty pokud socket.io selže
         const fallback = setInterval(async function() {
@@ -129,15 +103,11 @@
             } else if (data.state === 'question' && data.order !== currentOrder) {
               clearInterval(fallback);
               window.location.href = "/session/" + hash + "/q/" + data.order + "/";
-            } else if (data.state === 'waiting') {
-              clearInterval(fallback);
-              window.location.href = "{% url 'session_lobby' session.hash %}";
             }
           } catch (e) { /* ignore */ }
         }, 2000);
       });
-      {% endif %}
-      
+
       socket.on('connect', function() {
         // Připojit se k session room
         socket.emit('join_session', {hash: hash});
@@ -161,17 +131,15 @@
           } else {
             // Pokud je student už na správné otázce, ale otázka právě začala, obnovit stránku
             // aby se zobrazil formulář (pokud ještě neodpověděl)
-            {% if not is_host and not has_answered %}
+            {% if not has_answered %}
             if (!document.querySelector('form[action*="submit"]')) {
               location.reload();
             }
             {% endif %}
           }
         }
-        if (data.state === 'waiting') {
-          window.location.href = "{% url 'session_lobby' session.hash %}";
-        }
       });
+      {% endif %}
     })();
   </script>
   {% if is_host %}
@@ -184,38 +152,40 @@
         <h4>Výsledky podle odpovědí:</h4>
         <ul style="list-style:none; padding:0;">
           {% for answer in qrun.question.answers.all %}
-            {% with stats=answer_stats|get_item:answer.id %}
-            <li data-answer-id="{{ answer.id }}" class="answer-item {% if answer.is_correct %}correct{% else %}wrong{% endif %}">
-              <div style="display:flex; justify-content:space-between; align-items:center;flex-wrap:wrap;gap:8px;">
-                <div style="flex:1;min-width:200px;">
-                  <strong>{{ answer.text }}</strong>
-                  {% if answer.is_correct %}
-                    <span style="color:#2e7d32; margin-left:8px; font-size:18px;">✓</span>
-                  {% endif %}
-                </div>
-                <div class="stats-number" data-answer-id="{{ answer.id }}" style="font-size:clamp(20px, 4vw, 24px); font-weight:bold; {% if answer.is_correct %}color:#2e7d32;{% else %}color:#2196F3;{% endif %}">
-                  {% if stats %}{{ stats.count }}{% else %}0{% endif %}
-                </div>
+          {% with stats=answer_stats|get_item:answer.id %}
+          <li data-answer-id="{{ answer.id }}" class="answer-item {% if answer.is_correct %}correct{% else %}wrong{% endif %}" {% if answer.is_correct %}style="background:linear-gradient(135deg,#d1fae5 0%,#a7f3d0 100%)!important;border-left:5px solid #10b981!important;color:#065f46!important;"{% endif %}>
+            <div style="display:flex; justify-content:space-between; align-items:center;flex-wrap:wrap;gap:8px;">
+              <div style="flex:1;min-width:200px;">
+                <strong>
+                  {% if answer.is_correct %}✓{% endif %}
+                  {{ answer.text }}
+                </strong>
               </div>
-            </li>
-            {% endwith %}
+              <div class="stats-number" data-answer-id="{{ answer.id }}" style="font-size:clamp(20px, 4vw, 24px); font-weight:bold; {% if answer.is_correct %}color:#2e7d32;{% else %}color:#2196F3;{% endif %}">
+                {% if stats %}{{ stats.count }}{% else %}0{% endif %}
+              </div>
+            </div>
+          </li>
+          {% endwith %}
           {% endfor %}
         </ul>
       </div>
       {% else %}
-      {# Zobrazit základní statistiky i když ještě neodpověděli všichni - BEZ zobrazení správné odpovědi #}
+      {# Zobrazit základní statistiky i když ještě neodpověděli všichni - SE zobrazením správné odpovědi #}
       <div class="stats-section waiting" style="margin-top:20px; padding:20px; background:linear-gradient(135deg,#f3f4f6 0%,#e5e7eb 100%); border-radius:12px; border:2px solid var(--border); opacity:0.9;">
-        <h4>⏳ Průběžné výsledky:</h4>
+        <h4>Průběžné výsledky:</h4>
         <ul style="list-style:none; padding:0;">
           {% for answer in qrun.question.answers.all %}
             {% with stats=answer_stats|get_item:answer.id %}
-            <li data-answer-id="{{ answer.id }}" class="answer-item waiting">
-              <div style="display:flex; justify-content:space-between; align-items:center;flex-wrap:wrap;">
-                <div>
-                  <strong>{{ answer.text }}</strong>
-                  {# NESMÍ se zobrazit správná odpověď před skončením otázky #}
+            <li data-answer-id="{{ answer.id }}" class="answer-item {% if answer.is_correct %}correct{% else %}waiting{% endif %}" {% if answer.is_correct %}style="background:linear-gradient(135deg,#d1fae5 0%,#a7f3d0 100%)!important;border-left:5px solid #10b981!important;color:#065f46!important;"{% endif %}>
+              <div style="display:flex; justify-content:space-between; align-items:center;flex-wrap:wrap;gap:8px;">
+                <div style="flex:1;min-width:200px;">
+                  <strong>
+                    {% if answer.is_correct %}✓{% endif %}
+                    {{ answer.text }}
+                  </strong>
                 </div>
-                <div class="stats-number" data-answer-id="{{ answer.id }}" style="font-size:clamp(20px, 4vw, 24px); font-weight:bold; color:#2196F3;">
+                <div class="stats-number" data-answer-id="{{ answer.id }}" style="font-size:clamp(20px, 4vw, 24px); font-weight:bold; {% if answer.is_correct %}color:#2e7d32;{% else %}color:#2196F3;{% endif %}">
                   {% if stats %}{{ stats.count }}{% else %}0{% endif %}
                 </div>
               </div>
@@ -227,71 +197,65 @@
       </div>
       {% endif %}
       
-      {% if participant_responses %}
       <div style="margin-top:20px;">
         <h4 style="margin-top:0;font-size:clamp(16px, 2.5vw, 18px);">Kdo jak odpověděl:</h4>
-        
-        {% if correct_responses %}
-        <div style="margin-top:20px; padding:20px; background:linear-gradient(135deg,#d1fae5 0%,#a7f3d0 100%); border-radius:12px; border:3px solid var(--success);overflow-x:auto;box-shadow:var(--shadow);">
-          <h5 style="margin-top:0; color:#065f46;font-size:18px;">Správně odpověděli:</h5>
+        <div style="margin-top:20px; padding:20px; background:linear-gradient(135deg,#f3f4f6 0%,#e5e7eb 100%); border-radius:12px; border:3px solid var(--border);overflow-x:auto;box-shadow:var(--shadow);">
           <table class="results-table">
             <thead>
-              <tr style="border-bottom:2px solid #4CAF50;">
+              <tr style="border-bottom:2px solid #9ca3af;">
                 <th>Účastník</th>
                 <th>Odpověď</th>
+                <th>Stav</th>
               </tr>
             </thead>
             <tbody>
-              {% for response in correct_responses %}
-              <tr style="border-bottom:1px solid #c8e6c9;">
-                <td>{{ response.participant.display_name }}</td>
-                <td>{{ response.answer.text }}</td>
+              {% for p in participants %}
+              {% with resp=participant_responses|get_item:p.id %}
+              <tr class="{% if resp and resp.is_correct %}correct-answer-row{% endif %}" style="border-bottom:1px solid #e5e7eb;">
+                <td style="color:#000!important;">{{ p.display_name }}</td>
+                <td style="color:#000!important;">
+                  {% if resp %}
+                    {{ resp.answer.text }}
+                  {% else %}
+                    Neodpověděl
+                  {% endif %}
+                </td>
+                <td style="color:#000!important;">
+                  {% if resp %}
+                    {% if resp.is_correct %}
+                      Správně ✓
+                    {% else %}
+                      Špatně
+                    {% endif %}
+                  {% else %}
+                    Neodpověděl
+                  {% endif %}
+                </td>
+              </tr>
+              {% endwith %}
+              {% empty %}
+              <tr>
+                <td colspan="3" style="color:#000!important;">Žádní účastníci.</td>
               </tr>
               {% endfor %}
             </tbody>
           </table>
         </div>
-        {% endif %}
-        
-        {% if wrong_responses %}
-        <div style="margin-top:20px; padding:20px; background:linear-gradient(135deg,#fee2e2 0%,#fecaca 100%); border-radius:12px; border:3px solid var(--error);overflow-x:auto;box-shadow:var(--shadow);">
-          <h5 style="margin-top:0; color:#991b1b;font-size:18px;">Špatně odpověděli:</h5>
-          <table class="results-table">
-            <thead>
-              <tr style="border-bottom:2px solid #f44336;">
-                <th>Účastník</th>
-                <th>Odpověď</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for response in wrong_responses %}
-              <tr style="border-bottom:1px solid #ffcdd2;">
-                <td>{{ response.participant.display_name }}</td>
-                <td>{{ response.answer.text }}</td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
+      </div>
+      
+      <div style="margin-top:24px; padding-top:24px; border-top:3px solid var(--border);">
+        {% if next_exists %}
+          <a href="{% url 'session_start_question' session.hash qrun.order|add:1 %}" 
+             class="btn primary success" style="display:block;text-align:center;padding:16px;font-size:18px;">
+            Přejít na další otázku
+          </a>
+        {% else %}
+          <a href="{% url 'session_finish' session.hash %}" 
+             class="btn primary danger" style="display:block;text-align:center;padding:16px;font-size:18px;">
+            Ukončit sezení
+          </a>
         {% endif %}
       </div>
-      {% endif %}
-      
-      {% if all_answered or remaining == 0 %}
-        <div style="margin-top:24px; padding-top:24px; border-top:3px solid var(--border);">
-          {% if next_exists %}
-            <a href="{% url 'session_start_question' session.hash qrun.order|add:1 %}" 
-               class="btn primary success" style="display:block;text-align:center;padding:16px;font-size:18px;">
-              ➡️ Přejít na další otázku
-            </a>
-          {% else %}
-            <a href="{% url 'session_finish' session.hash %}" 
-               class="btn primary danger" style="display:block;text-align:center;padding:16px;font-size:18px;">
-              Ukončit sezení
-            </a>
-          {% endif %}
-        </div>
-      {% endif %}
     </div>
   {% else %}
     {% if not question_started %}
@@ -301,6 +265,10 @@
     {% elif has_answered %}
       <div style="margin:24px 0; padding:20px; background:linear-gradient(135deg,#e0e7ff 0%,#c7d2fe 100%); border-radius:12px; border:3px solid var(--primary);box-shadow:var(--shadow);">
         <p style="margin:0;font-size:18px;font-weight:600;color:#3730a3;">Odpověď přijata. Čekejte, než odpoví ostatní studenti nebo učitel spustí další otázku.</p>
+      </div>
+    {% elif time_over %}
+      <div style="margin:24px 0; padding:20px; background:linear-gradient(135deg,#fee2e2 0%,#fecaca 100%); border-radius:12px; border:3px solid var(--error);box-shadow:var(--shadow);">
+        <p style="margin:0;font-size:18px;font-weight:600;color:#991b1b;">Čas na odpověď vypršel. Neodpověděli jste. Čekejte, než učitel spustí další otázku.</p>
       </div>
     {% else %}
     <form action="{% url 'session_submit_answer' session.hash qrun.order %}" method="post" style="margin-top:24px;" id="answer-form">
@@ -315,8 +283,11 @@
           </li>
         {% endfor %}
       </ul>
-      <button type="submit" class="btn primary" style="margin-top:24px;width:100%;padding:18px;font-size:18px;font-weight:bold;">📤 Odeslat odpověď</button>
+      <button type="submit" class="btn primary" style="margin-top:24px;width:100%;padding:18px;font-size:18px;font-weight:bold;">Odeslat odpověď</button>
     </form>
+    <div id="time-over-message" style="display:none;margin:24px 0; padding:20px; background:linear-gradient(135deg,#fee2e2 0%,#fecaca 100%); border-radius:12px; border:3px solid var(--error);box-shadow:var(--shadow);">
+      <p style="margin:0;font-size:18px;font-weight:600;color:#991b1b;">Čas na odpověď vypršel. Neodpověděli jste. Čekejte, než učitel spustí další otázku.</p>
+    </div>
     <script>
       // Zastavit timer když žák odešle odpověď
       (function() {
@@ -340,6 +311,7 @@
 (function() {
   var lastCount = {{ answered_count }};
   var allAnswered = {{ all_answered|yesno:"true,false" }};
+  var timeOver = {{ time_over|yesno:"true,false" }};
   var order = {{ qrun.order }};
   var hash = "{{ session.hash }}";
   
@@ -378,6 +350,15 @@
             setTimeout(function() { 
               location.reload(); 
             }, 1000);
+          }
+
+          // Pokud doběhl čas (remaining <= 0), také refreshnout stránku,
+          // aby se zobrazilo tlačítko pro další otázku / ukončení sezení.
+          if (d.remaining !== undefined && d.remaining <= 0 && !timeOver) {
+            timeOver = true;
+            setTimeout(function() {
+              location.reload();
+            }, 500);
           }
         } else if (d.state === 'finished') {
           window.location.href = "{% url 'session_results' session.hash %}";
