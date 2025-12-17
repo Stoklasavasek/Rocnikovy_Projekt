@@ -8,7 +8,7 @@
   <h1>{% if quiz %}Upravit kvíz{% else %}Vytvořit nový kvíz{% endif %}</h1>
   <p style="color:#666;margin-bottom:24px;">{% if quiz %}Upravte kvíz s otázkami a odpověďmi.{% else %}Vytvořte kvíz s otázkami a odpověďmi najednou.{% endif %} Můžete přidat více otázek kliknutím na tlačítko "Přidat otázku".</p>
   
-  <form method="post" id="quiz-form" action="{% if quiz %}{% url 'quiz_update' quiz.id %}{% else %}{% url 'quiz_create' %}{% endif %}">
+  <form method="post" id="quiz-form" enctype="multipart/form-data" action="{% if quiz %}{% url 'quiz_update' quiz.id %}{% else %}{% url 'quiz_create' %}{% endif %}">
     {% csrf_token %}
     
     <div style="margin-bottom:32px;padding:16px;background:#f9f9f9;border-radius:8px;">
@@ -18,7 +18,7 @@
              style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:16px;"
              value="{{ quiz_title }}">
     </div>
-    
+
     <div id="questions-container">
       <!-- Otázky budou přidány sem pomocí JavaScriptu -->
     </div>
@@ -72,6 +72,12 @@ function addQuestion() {
       <input type="text" name="question_${questionIndex}_text" required
              placeholder="Zadejte text otázky"
              style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:15px;">
+    </div>
+    
+    <div style="margin-bottom:16px;">
+      <label style="display:block;margin-bottom:8px;font-weight:bold;">Obrázek k otázce (volitelné):</label>
+      <input type="file" name="question_${questionIndex}_image" accept="image/*">
+      <p style="color:#777;font-size:12px;margin-top:4px;">Zobrazí se u této otázky studentům.</p>
     </div>
     
     <div style="margin-top:20px;">

@@ -85,7 +85,7 @@ def quiz_create(request):
             messages.error(request, "Název kvízu je povinný.")
             return render(request, "quiz/quiz_create_full.html", {"quiz_title": "", "is_teacher": is_teacher})
         
-        # Vytvoření kvízu
+        # Vytvoření kvízu (obrázek se řeší jen na úrovni otázek)
         quiz = Quiz.objects.create(title=quiz_title, created_by=request.user)
         
         # Zpracování otázek
@@ -97,7 +97,9 @@ def quiz_create(request):
             if not question_text:
                 break
             
-            question = Question.objects.create(quiz=quiz, text=question_text)
+            # Obrázek k dané otázce (volitelný)
+            question_image = request.FILES.get(f"question_{question_index}_image")
+            question = Question.objects.create(quiz=quiz, text=question_text, image=question_image)
             question_count += 1
             
             # Zpracování odpovědí pro tuto otázku
@@ -156,7 +158,8 @@ def quiz_update(request, quiz_id):
             if not question_text:
                 break
             
-            question = Question.objects.create(quiz=quiz, text=question_text)
+            question_image = request.FILES.get(f"question_{question_index}_image")
+            question = Question.objects.create(quiz=quiz, text=question_text, image=question_image)
             question_count += 1
             
             # Zpracování odpovědí pro tuto otázku

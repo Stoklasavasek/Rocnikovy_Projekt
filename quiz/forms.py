@@ -2,7 +2,6 @@ from django import forms
 from django.forms import inlineformset_factory
 from .models import Quiz, Question, Answer
 
-
 class QuizForm(forms.ModelForm):
     class Meta:
         model = Quiz
@@ -64,3 +63,4 @@ class QuizCreateForm(forms.ModelForm):
                 "style": "width: 100%; padding: 8px; margin-bottom: 20px;"
             })
         }
+
