@@ -46,6 +46,7 @@ class Question(models.Model):
     quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name="questions")
     text = models.CharField(max_length=300)
     image = models.ImageField(upload_to="question_images/", null=True, blank=True)
+    duration_seconds = models.PositiveIntegerField(default=20, help_text="Čas na odpověď v sekundách")
 
     def __str__(self):
         return self.text

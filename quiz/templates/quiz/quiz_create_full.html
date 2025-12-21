@@ -65,6 +65,12 @@ function addQuestion() {
       <p>Zobrazí se u této otázky studentům.</p>
     </div>
     
+    <div class="question-field">
+      <label>Čas na odpověď (sekundy):</label>
+      <input type="number" name="question_${questionIndex}_duration" min="5" max="300" value="20" required>
+      <p>Minimálně 5 sekund, maximálně 300 sekund (5 minut).</p>
+    </div>
+    
     <div class="quiz-form-answers-section">
       <label class="quiz-form-answers-label">Odpovědi:</label>
       <div class="answers-container">
@@ -120,6 +126,8 @@ function loadExistingQuestions() {
         const qDiv = addQuestion();
         const questionInput = qDiv.querySelector(`input[name^="question_"][name$="_text"]`);
         if (questionInput && qData.text) questionInput.value = qData.text;
+        const durationInput = qDiv.querySelector(`input[name^="question_"][name$="_duration"]`);
+        if (durationInput && qData.duration) durationInput.value = qData.duration;
         if (qData.answers?.length > 0) {
           const answersContainer = qDiv.querySelector('.answers-container');
           answersContainer.innerHTML = '';

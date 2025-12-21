@@ -37,7 +37,10 @@ def _process_quiz_questions(quiz, request):
             break
         
         question_image = request.FILES.get(f"question_{question_index}_image")
-        question = Question.objects.create(quiz=quiz, text=question_text, image=question_image)
+        duration = int(request.POST.get(f"question_{question_index}_duration", 20))
+        # Validace: minimálně 5 sekund, maximálně 300 sekund (5 minut)
+        duration = max(5, min(300, duration))
+        question = Question.objects.create(quiz=quiz, text=question_text, image=question_image, duration_seconds=duration)
         question_count += 1
         
         answer_count = 0
@@ -233,6 +236,7 @@ def quiz_update(request, quiz_id):
     
     questions_data = [{
         'text': q.text,
+        'duration': getattr(q, 'duration_seconds', 20),
         'answers': [{'text': a.text, 'is_correct': a.is_correct} for a in q.answers.all()]
     } for q in quiz.questions.all().order_by('id')]
     
@@ -261,7 +265,10 @@ def session_create(request, quiz_id):
     quiz = get_object_or_404(Quiz, id=quiz_id, created_by=request.user)
     session = QuizSession.objects.create(quiz=quiz, host=request.user)
     for index, q in enumerate(quiz.questions.all(), start=1):
-        QuestionRun.objects.create(session=session, question=q, order=index)
+        # Vždy použij duration_seconds z Question (má default 20 v modelu)
+        # Načteme hodnotu přímo z databáze pomocí values() pro jistotu
+        duration = q.duration_seconds if hasattr(q, 'duration_seconds') else 20
+        QuestionRun.objects.create(session=session, question=q, order=index, duration_seconds=duration)
     return redirect("session_lobby", hash=session.hash)
 
 
