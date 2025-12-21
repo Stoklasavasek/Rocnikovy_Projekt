@@ -150,41 +150,69 @@
       </div>
       {% endif %}
       
-      <div>
-        <h4 class="participants-table-header">Kdo jak odpověděl:</h4>
-        <div class="participants-table-wrapper">
-          <table class="results-table">
-            <thead>
-              <tr class="table-header-row">
-                <th>Účastník</th>
-                <th>Odpověď</th>
-                <th>Stav</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for p in participants %}
-              {% with resp=participant_responses|get_item:p.id %}
-              <tr class="table-data-row {% if all_answered or time_over %}{% if resp and resp.is_correct %}correct-answer-row{% elif resp and not resp.is_correct %}wrong-answer-row{% endif %}{% endif %}">
-                <td class="table-cell">{{ p.display_name }}</td>
-                <td class="table-cell">{% if resp %}{{ resp.answer.text }}{% else %}Neodpověděl{% endif %}</td>
-                <td class="table-cell">
-                  {% if resp %}
-                    {% if all_answered or time_over %}
-                      {% if resp.is_correct %}Správně ✓{% else %}Špatně ✗{% endif %}
+      <div class="tables-grid">
+        <div>
+          <h4 class="participants-table-header">Průběžný žebříček:</h4>
+          <div class="participants-table-wrapper">
+            <table class="results-table">
+              <thead>
+                <tr class="table-header-row">
+                  <th>#</th>
+                  <th>Účastník</th>
+                  <th>Body</th>
+                </tr>
+              </thead>
+              <tbody id="leaderboard-body">
+                {% for item in participant_leaderboard %}
+                <tr class="table-data-row {% if forloop.counter0 == 0 and item.score > 0 %}correct-answer-row{% endif %}">
+                  <td class="table-cell">{{ forloop.counter }}.</td>
+                  <td class="table-cell">{{ item.participant.display_name }}</td>
+                  <td class="table-cell"><strong>{{ item.score }}</strong></td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="3" class="table-cell">Žádní účastníci.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        
+        <div>
+          <h4 class="participants-table-header">Kdo jak odpověděl:</h4>
+          <div class="participants-table-wrapper">
+            <table class="results-table">
+              <thead>
+                <tr class="table-header-row">
+                  <th>Účastník</th>
+                  <th>Odpověď</th>
+                  <th>Stav</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for p in participants %}
+                {% with resp=participant_responses|get_item:p.id %}
+                <tr class="table-data-row {% if all_answered or time_over %}{% if resp and resp.is_correct %}correct-answer-row{% elif resp and not resp.is_correct %}wrong-answer-row{% endif %}{% endif %}">
+                  <td class="table-cell">{{ p.display_name }}</td>
+                  <td class="table-cell">{% if resp %}{{ resp.answer.text }}{% else %}Neodpověděl{% endif %}</td>
+                  <td class="table-cell">
+                    {% if resp %}
+                      {% if all_answered or time_over %}
+                        {% if resp.is_correct %}Správně ✓{% else %}Špatně ✗{% endif %}
+                      {% else %}
+                        Odpověděl
+                      {% endif %}
                     {% else %}
-                      Odpověděl
+                      Neodpověděl
                     {% endif %}
-                  {% else %}
-                    Neodpověděl
-                  {% endif %}
-                </td>
-              </tr>
-              {% endwith %}
-              {% empty %}
-              <tr><td colspan="3" class="table-cell">Žádní účastníci.</td></tr>
-              {% endfor %}
-            </tbody>
-          </table>
+                  </td>
+                </tr>
+                {% endwith %}
+                {% empty %}
+                <tr><td colspan="3" class="table-cell">Žádní účastníci.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
       
@@ -267,10 +295,26 @@
   const statusUrl = "{% url 'session_status' session.hash %}";
   const resultsUrl = "{% url 'session_results' session.hash %}";
   
+  function updateLeaderboard(leaderboard) {
+    const tbody = document.getElementById('leaderboard-body');
+    if (!tbody || !leaderboard || leaderboard.length === 0) return;
+    
+    tbody.innerHTML = '';
+    leaderboard.forEach((item, index) => {
+      const row = document.createElement('tr');
+      row.className = 'table-data-row' + (index === 0 && item.score > 0 ? ' correct-answer-row' : '');
+      row.innerHTML = `
+        <td class="table-cell">${index + 1}.</td>
+        <td class="table-cell">${item.name}</td>
+        <td class="table-cell"><strong>${item.score}</strong></td>
+      `;
+      tbody.appendChild(row);
+    });
+  }
+  
   function updateStats() {
     fetch(statusUrl).then(r => r.ok ? r.json() : null).then(d => {
-      if (!d) return;
-      if (d.state === 'question' && d.order === order) {
+      if (d && d.state === 'question' && d.order === order) {
         if (d.answered_count !== undefined && d.answered_count !== lastCount) {
           lastCount = d.answered_count;
           const countEl = document.getElementById('answered-count');
@@ -281,6 +325,9 @@
               if (statEl) statEl.textContent = d.answer_stats[aid];
             }
           }
+        }
+        if (d.leaderboard) {
+          updateLeaderboard(d.leaderboard);
         }
         if (d.all_answered && !allAnswered) {
           allAnswered = true;

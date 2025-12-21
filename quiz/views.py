@@ -404,6 +404,28 @@ def session_question_view(request, hash, order):
         _get_question_stats(qrun) if is_host else ({}, {}, [], [], [])
     )
     
+    # Výpočet bodů pro všechny účastníky (pro učitele)
+    participant_leaderboard = []
+    if is_host:
+        participant_scores = {}
+        # Počítáme body za všechny dokončené otázky (včetně aktuální)
+        for resp in Response.objects.filter(
+            question_run__session=session,
+            question_run__order__lte=order
+        ).select_related("participant"):
+            points = resp.calculate_points()
+            participant_scores[resp.participant_id] = participant_scores.get(resp.participant_id, 0) + points
+        
+        # Vytvoříme seznam účastníků s body (i když mají 0 bodů)
+        for participant in session.participants.all():
+            participant_leaderboard.append({
+                "participant": participant,
+                "score": participant_scores.get(participant.id, 0)
+            })
+        
+        # Seřadíme podle bodů (sestupně), pak podle jména pro konzistenci
+        participant_leaderboard.sort(key=lambda x: (x["score"], x["participant"].display_name), reverse=True)
+    
     return render(request, "quiz/session_question.html", {
         "session": session,
         "qrun": qrun,
@@ -425,6 +447,7 @@ def session_question_view(request, hash, order):
         "correct_responses": correct_responses,
         "wrong_responses": wrong_responses,
         "no_answer_responses": no_answer_responses,
+        "participant_leaderboard": participant_leaderboard,
     })
 
 
@@ -461,13 +484,32 @@ def session_status(request, hash):
             _, answered_count, all_answered = _get_participant_stats(session, current)
             remaining, _ = _get_question_timing(current)
             
+            # Výpočet žebříčku účastníků
+            participant_scores = {}
+            for resp in Response.objects.filter(
+                question_run__session=session,
+                question_run__order__lte=current.order
+            ).select_related("participant"):
+                points = resp.calculate_points()
+                participant_scores[resp.participant_id] = participant_scores.get(resp.participant_id, 0) + points
+            
+            leaderboard = []
+            for participant in session.participants.all():
+                leaderboard.append({
+                    "id": participant.id,
+                    "name": participant.display_name,
+                    "score": participant_scores.get(participant.id, 0)
+                })
+            leaderboard.sort(key=lambda x: (x["score"], x["name"]), reverse=True)
+            
             response_data.update({
                 "answered_count": answered_count,
                 "total_participants": total_participants,
                 "all_answered": all_answered,
                 "answer_stats": answer_stats,
                 "correct_answer_ids": [str(a.id) for a in answers if a.is_correct],
-                "remaining": remaining
+                "remaining": remaining,
+                "leaderboard": leaderboard
             })
         
         return JsonResponse(response_data)
