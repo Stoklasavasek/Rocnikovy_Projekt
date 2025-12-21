@@ -1,55 +1,171 @@
-from django.shortcuts import render, get_object_or_404, redirect
-from .models import Quiz, Question, Answer, StudentAnswer, QuizSession, Participant, QuestionRun, Response
-from .forms import QuizForm, QuestionFormSet, AnswerFormSet
-from django.contrib.auth.decorators import login_required
-from django.contrib import messages
-from .roles import teacher_required
-from django.http import HttpResponse, JsonResponse
-from django.db.models import Q
+"""
+Hlavní view funkce pro aplikaci kvízů.
+
+Sem patří:
+ - vytváření a správa kvízů učitelem,
+ - spouštění „živých“ sezení (QuizSession),
+ - zobrazení otázek a zpracování odpovědí studentů,
+ - průběžné i finální výsledky kvízu.
+"""
+
 import csv
+import json
+
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.db.models import Q
+from django.http import HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from django.utils.safestring import mark_safe
+
+from .models import Answer, Participant, Question, QuestionRun, Quiz, QuizSession, Response, StudentAnswer
+from .roles import user_is_teacher
+from .socketio_handler import get_socketio_client, send_answer_update, send_session_status
+
+
+# ===== HELPER FUNKCE =====
+
+def _process_quiz_questions(quiz, request):
+    """Zpracuje otázky a odpovědi z POST dat."""
+    question_count = 0
+    question_index = 0
+    
+    while True:
+        question_text = request.POST.get(f"question_{question_index}_text", "").strip()
+        if not question_text:
+            break
+        
+        question_image = request.FILES.get(f"question_{question_index}_image")
+        question = Question.objects.create(quiz=quiz, text=question_text, image=question_image)
+        question_count += 1
+        
+        answer_count = 0
+        for answer_index in range(10):
+            answer_text = request.POST.get(f"question_{question_index}_answer_{answer_index}_text", "").strip()
+            if not answer_text:
+                continue
+            
+            is_correct = request.POST.get(f"question_{question_index}_answer_{answer_index}_correct") == "on"
+            Answer.objects.create(question=question, text=answer_text, is_correct=is_correct)
+            answer_count += 1
+        
+        if answer_count == 0:
+            question.delete()
+            question_count -= 1
+        
+        question_index += 1
+    
+    return question_count
+
+
+def _get_question_stats(qrun):
+    """Vrátí statistiky odpovědí pro otázku."""
+    answer_stats = {}
+    participant_responses = {}
+    correct_responses = []
+    wrong_responses = []
+    
+    for answer in qrun.question.answers.all():
+        count = qrun.responses.filter(answer=answer).count()
+        answer_stats[answer.id] = {'answer': answer, 'count': count, 'is_correct': answer.is_correct}
+    
+    for response in qrun.responses.select_related('participant', 'answer').all():
+        response_data = {
+            'participant': response.participant,
+            'answer': response.answer,
+            'is_correct': response.is_correct,
+            'answered_at': response.answered_at
+        }
+        participant_responses[response.participant.id] = response_data
+        (correct_responses if response.is_correct else wrong_responses).append(response_data)
+    
+    responded_ids = set(participant_responses.keys())
+    no_answer_responses = [p for p in qrun.session.participants.all() if p.id not in responded_ids]
+    
+    return answer_stats, participant_responses, correct_responses, wrong_responses, no_answer_responses
+
+
+def _get_current_question_run(session):
+    """Vrátí aktuálně běžící otázku v sezení."""
+    now = timezone.now()
+    return (
+        session.question_runs
+        .filter(starts_at__isnull=False)
+        .filter(Q(ends_at__isnull=True) | Q(ends_at__gt=now))
+        .order_by("order")
+        .last()
+    )
+
+
+def _get_question_timing(qrun):
+    """Vrátí remaining time a time_over pro otázku."""
+    remaining = max(0, int((qrun.ends_at - timezone.now()).total_seconds())) if qrun.ends_at else 0
+    time_over = remaining == 0 and qrun.ends_at is not None and timezone.now() >= qrun.ends_at
+    return remaining, time_over
+
+
+def _get_participant_stats(session, qrun=None):
+    """Vrátí statistiky účastníků."""
+    total_participants = session.participants.count()
+    if qrun:
+        answered_count = qrun.responses.values("participant_id").distinct().count()
+        all_answered = total_participants > 0 and answered_count >= total_participants
+        return total_participants, answered_count, all_answered
+    return total_participants, 0, False
+
+
+def _get_or_create_participant(session, user):
+    """Vytvoří nebo vrátí participant pro uživatele."""
+    return Participant.objects.get_or_create(
+        session=session, user=user, defaults={"display_name": user.username}
+    )
+
+
+# ===== VIEW FUNKCE =====
+
 def landing(request):
-    from quiz.roles import user_is_teacher
+    """Úvodní obrazovka."""
     is_teacher = user_is_teacher(request.user) if request.user.is_authenticated else False
     return render(request, "landing.html", {"is_teacher": is_teacher})
 
+
 @login_required
 def quiz_list(request):
-    from .roles import user_is_teacher
+    """Přehled kvízů aktuálního uživatele a aktivních sezení."""
     quizzes = Quiz.objects.filter(created_by=request.user) if request.user.is_authenticated else Quiz.objects.none()
     active_sessions = QuizSession.objects.filter(host=request.user, is_active=True)
-    is_teacher = user_is_teacher(request.user)
-    return render(request, "quiz/quiz_list.html", {"quizzes": quizzes, "active_sessions": active_sessions, "is_teacher": is_teacher})
+    return render(request, "quiz/quiz_list.html", {
+        "quizzes": quizzes,
+        "active_sessions": active_sessions,
+        "is_teacher": user_is_teacher(request.user)
+    })
+
 
 @login_required
 def quiz_start(request, quiz_id):
+    """Jednodušší režim spuštění kvízu bez „živé" session."""
     quiz = get_object_or_404(Quiz, id=quiz_id)
     questions = quiz.questions.all()
-
+    
+    def get_redirect():
+        return redirect("quiz_update", quiz_id=quiz.id) if request.user == quiz.created_by else redirect("quiz_list")
+    
     if not questions.exists():
         messages.warning(request, "Tento kvíz nemá žádné otázky. Nejdříve přidejte otázky.")
-        if request.user == quiz.created_by:
-            return redirect("quiz_questions", quiz_id=quiz.id)
-        return redirect("quiz_list")
-
+        return get_redirect()
+    
     for question in questions:
         if not question.answers.exists():
             messages.warning(request, f"Otázka '{question.text}' nemá žádné odpovědi.")
-            if request.user == quiz.created_by:
-                return redirect("quiz_questions", quiz_id=quiz.id)
-            return redirect("quiz_list")
-
+            return get_redirect()
+    
     if request.method == "POST":
         score = 0
         for question in questions:
-            selected_id = request.POST.get(f"question_{question.id}")
-            if selected_id:
+            if selected_id := request.POST.get(f"question_{question.id}"):
                 answer = Answer.objects.get(id=selected_id)
-                StudentAnswer.objects.create(
-                    student=request.user,
-                    question=question,
-                    selected_answer=answer
-                )
+                StudentAnswer.objects.create(student=request.user, question=question, selected_answer=answer)
                 if answer.is_correct:
                     score += 1
         return render(request, "quiz/quiz_result.html", {"quiz": quiz, "score": score, "total": questions.count()})
@@ -59,187 +175,78 @@ def quiz_start(request, quiz_id):
 
 @login_required
 def join_quiz_by_code(request):
+    """Připojení ke kvízu pomocí kódu."""
     if request.method == "POST":
         code = request.POST.get("code", "").strip().upper()
-        session = QuizSession.objects.filter(code__iexact=code, is_active=True).first()
-        if session:
+        if session := QuizSession.objects.filter(code__iexact=code, is_active=True).first():
             request.session["session_hash"] = session.hash
             return redirect("session_lobby", hash=session.hash)
-        quiz = Quiz.objects.filter(join_code__iexact=code).first()
-        if not quiz:
-            messages.error(request, "Kód je neplatný.")
-            return redirect("quiz_join")
-        return redirect("quiz_start", quiz_id=quiz.id)
+        
+        if quiz := Quiz.objects.filter(join_code__iexact=code).first():
+            return redirect("quiz_start", quiz_id=quiz.id)
+        messages.error(request, "Kód je neplatný.")
+        return redirect("quiz_join")
     return render(request, "quiz/join.html")
 
 
 @login_required
 def quiz_create(request):
-    from .roles import user_is_teacher
-    is_teacher = user_is_teacher(request.user)
-    
+    """Vytvoření nového kvízu v jednom formuláři."""
     if request.method == "POST":
-        # Zpracování vytvoření kvízu s otázkami a odpověďmi najednou
         quiz_title = request.POST.get("quiz_title", "").strip()
         if not quiz_title:
             messages.error(request, "Název kvízu je povinný.")
-            return render(request, "quiz/quiz_create_full.html", {"quiz_title": "", "is_teacher": is_teacher})
+            return render(request, "quiz/quiz_create_full.html", {
+                "quiz_title": "",
+                "is_teacher": user_is_teacher(request.user)
+            })
         
-        # Vytvoření kvízu (obrázek se řeší jen na úrovni otázek)
         quiz = Quiz.objects.create(title=quiz_title, created_by=request.user)
-        
-        # Zpracování otázek
-        question_count = 0
-        question_index = 0
-        
-        while True:
-            question_text = request.POST.get(f"question_{question_index}_text", "").strip()
-            if not question_text:
-                break
-            
-            # Obrázek k dané otázce (volitelný)
-            question_image = request.FILES.get(f"question_{question_index}_image")
-            question = Question.objects.create(quiz=quiz, text=question_text, image=question_image)
-            question_count += 1
-            
-            # Zpracování odpovědí pro tuto otázku
-            answer_count = 0
-            for answer_index in range(10):  # Max 10 odpovědí na otázku
-                answer_text = request.POST.get(f"question_{question_index}_answer_{answer_index}_text", "").strip()
-                if not answer_text:
-                    continue
-                
-                is_correct = request.POST.get(f"question_{question_index}_answer_{answer_index}_correct") == "on"
-                Answer.objects.create(question=question, text=answer_text, is_correct=is_correct)
-                answer_count += 1
-            
-            if answer_count == 0:
-                # Pokud otázka nemá odpovědi, smažeme ji
-                question.delete()
-                question_count -= 1
-            
-            question_index += 1
-        
-        if question_count > 0:
-            messages.success(request, f"Kvíz '{quiz.title}' byl vytvořen s {question_count} otázkami.")
-        else:
-            messages.warning(request, "Kvíz byl vytvořen, ale nemá žádné otázky.")
+        question_count = _process_quiz_questions(quiz, request)
+        messages.success(request, f"Kvíz '{quiz.title}' byl vytvořen s {question_count} otázkami.") if question_count > 0 else messages.warning(request, "Kvíz byl vytvořen, ale nemá žádné otázky.")
         return redirect("quiz_list")
     
-    return render(request, "quiz/quiz_create_full.html", {"quiz_title": "", "is_teacher": is_teacher, "quiz": None})
+    return render(request, "quiz/quiz_create_full.html", {
+        "quiz_title": "",
+        "is_teacher": user_is_teacher(request.user),
+        "quiz": None
+    })
 
 
 @login_required
 def quiz_update(request, quiz_id):
-    from .roles import user_is_teacher
+    """Úprava existujícího kvízu."""
     quiz = get_object_or_404(Quiz, id=quiz_id, created_by=request.user)
-    is_teacher = user_is_teacher(request.user)
     
     if request.method == "POST":
-        # Zpracování úpravy kvízu s otázkami a odpověďmi najednou
         quiz_title = request.POST.get("quiz_title", "").strip()
         if not quiz_title:
             messages.error(request, "Název kvízu je povinný.")
             return redirect("quiz_update", quiz_id=quiz.id)
         
-        # Aktualizace názvu kvízu
         quiz.title = quiz_title
         quiz.save()
-        
-        # Smazat všechny existující otázky a odpovědi
         quiz.questions.all().delete()
-        
-        # Zpracování nových otázek
-        question_count = 0
-        question_index = 0
-        
-        while True:
-            question_text = request.POST.get(f"question_{question_index}_text", "").strip()
-            if not question_text:
-                break
-            
-            question_image = request.FILES.get(f"question_{question_index}_image")
-            question = Question.objects.create(quiz=quiz, text=question_text, image=question_image)
-            question_count += 1
-            
-            # Zpracování odpovědí pro tuto otázku
-            answer_count = 0
-            for answer_index in range(10):  # Max 10 odpovědí na otázku
-                answer_text = request.POST.get(f"question_{question_index}_answer_{answer_index}_text", "").strip()
-                if not answer_text:
-                    continue
-                
-                is_correct = request.POST.get(f"question_{question_index}_answer_{answer_index}_correct") == "on"
-                Answer.objects.create(question=question, text=answer_text, is_correct=is_correct)
-                answer_count += 1
-            
-            if answer_count == 0:
-                # Pokud otázka nemá odpovědi, smažeme ji
-                question.delete()
-                question_count -= 1
-            
-            question_index += 1
-        
-        if question_count > 0:
-            messages.success(request, f"Kvíz '{quiz.title}' byl upraven s {question_count} otázkami.")
-        else:
-            messages.warning(request, "Kvíz byl upraven, ale nemá žádné otázky.")
+        question_count = _process_quiz_questions(quiz, request)
+        messages.success(request, f"Kvíz '{quiz.title}' byl upraven s {question_count} otázkami.") if question_count > 0 else messages.warning(request, "Kvíz byl upraven, ale nemá žádné otázky.")
         return redirect("quiz_list")
     
-    # Načtení existujících dat pro editaci
-    import json
-    from django.utils.safestring import mark_safe
-    questions_data = []
-    for question in quiz.questions.all().order_by('id'):
-        answers_data = []
-        for answer in question.answers.all():
-            answers_data.append({
-                'text': answer.text,
-                'is_correct': answer.is_correct
-            })
-        questions_data.append({
-            'text': question.text,
-            'answers': answers_data
-        })
+    questions_data = [{
+        'text': q.text,
+        'answers': [{'text': a.text, 'is_correct': a.is_correct} for a in q.answers.all()]
+    } for q in quiz.questions.all().order_by('id')]
     
     return render(request, "quiz/quiz_create_full.html", {
         "quiz_title": quiz.title,
-        "is_teacher": is_teacher,
+        "is_teacher": user_is_teacher(request.user),
         "quiz": quiz,
         "questions_data": mark_safe(json.dumps(questions_data))
     })
 
 
 @login_required
-def quiz_questions(request, quiz_id):
-    quiz = get_object_or_404(Quiz, id=quiz_id, created_by=request.user)
-    if request.method == "POST":
-        formset = QuestionFormSet(request.POST, instance=quiz)
-        if formset.is_valid():
-            formset.save()
-            messages.success(request, "Otázky byly uloženy.")
-            return redirect("quiz_questions", quiz_id=quiz.id)
-    else:
-        formset = QuestionFormSet(instance=quiz)
-    return render(request, "quiz/questions_edit.html", {"quiz": quiz, "formset": formset})
-
-
-@login_required
-def question_answers(request, question_id):
-    question = get_object_or_404(Question, id=question_id, quiz__created_by=request.user)
-    if request.method == "POST":
-        formset = AnswerFormSet(request.POST, instance=question)
-        if formset.is_valid():
-            formset.save()
-            messages.success(request, "Odpovědi byly uloženy.")
-            return redirect("quiz_questions", quiz_id=question.quiz.id)
-    else:
-        formset = AnswerFormSet(instance=question)
-    return render(request, "quiz/answers_edit.html", {"question": question, "formset": formset})
-
-
-@login_required
 def quiz_delete(request, quiz_id):
+    """Smazání kvízu."""
     quiz = get_object_or_404(Quiz, id=quiz_id, created_by=request.user)
     if request.method == "POST":
         quiz.delete()
@@ -250,6 +257,7 @@ def quiz_delete(request, quiz_id):
 
 @login_required
 def session_create(request, quiz_id):
+    """Vytvoření nového živého sezení."""
     quiz = get_object_or_404(Quiz, id=quiz_id, created_by=request.user)
     session = QuizSession.objects.create(quiz=quiz, host=request.user)
     for index, q in enumerate(quiz.questions.all(), start=1):
@@ -259,16 +267,10 @@ def session_create(request, quiz_id):
 
 @login_required
 def session_lobby(request, hash):
+    """Lobby pro živé sezení."""
     session = get_object_or_404(QuizSession, hash=hash, is_active=True)
     is_host = session.host == request.user
-    
-    participant = None
-    if not is_host:
-        participant, created = Participant.objects.get_or_create(
-            session=session,
-            user=request.user,
-            defaults={"display_name": request.user.username}
-        )
+    participant, _ = _get_or_create_participant(session, request.user) if not is_host else (None, False)
     
     return render(request, "quiz/session_lobby.html", {
         "session": session,
@@ -279,303 +281,179 @@ def session_lobby(request, hash):
 
 @login_required
 def session_start_question(request, hash, order):
+    """Spustí konkrétní otázku v živém sezení (pouze učitel)."""
     session = get_object_or_404(QuizSession, hash=hash, host=request.user, is_active=True)
     qrun = get_object_or_404(QuestionRun, session=session, order=order)
     qrun.start_now()
-    # Refresh z databáze, aby měl aktuální hodnoty
     qrun.refresh_from_db()
     
-    # Odeslat socket.io událost přímo s order - musí být až po uložení
-    from .socketio_handler import get_socketio_client
     try:
         client = get_socketio_client()
         if client and client.connected:
-            data = {
-                'hash': session.hash,
-                'state': 'question',
-                'order': order
-            }
-            client.emit('broadcast_session_state', data)
+            client.emit('broadcast_session_state', {'hash': session.hash, 'state': 'question', 'order': order})
     except Exception:
         pass
     
-    # Také zavolat send_session_status pro jistotu (hledá aktuální otázku)
-    from .socketio_handler import send_session_status
     send_session_status(session.hash)
-    remaining = max(0, int((qrun.ends_at - timezone.now()).total_seconds())) if qrun.ends_at else 0
-    is_host = True
-    total_participants = session.participants.count()
-    answered_count = qrun.responses.values("participant_id").distinct().count()
-    all_answered = total_participants > 0 and answered_count >= total_participants
-    next_exists = QuestionRun.objects.filter(session=session, order=order + 1).exists()
     
-    # Statistiky odpovědí
-    answer_stats = {}
-    participant_responses = {}
-    correct_responses = []
-    wrong_responses = []
-    no_answer_responses = []
-    for answer in qrun.question.answers.all():
-        count = qrun.responses.filter(answer=answer).count()
-        answer_stats[answer.id] = {
-            'answer': answer,
-            'count': count,
-            'is_correct': answer.is_correct
-        }
+    remaining, time_over = _get_question_timing(qrun)
+    total_participants, answered_count, all_answered = _get_participant_stats(session, qrun)
     
-    for response in qrun.responses.select_related('participant', 'answer').all():
-        response_data = {
-            'participant': response.participant,
-            'answer': response.answer,
-            'is_correct': response.is_correct,
-            'answered_at': response.answered_at
-        }
-        participant_responses[response.participant.id] = response_data
-        if response.is_correct:
-            correct_responses.append(response_data)
-        else:
-            wrong_responses.append(response_data)
-
-    # Účastníci, kteří zatím neodpověděli (pro tabulku „Kdo jak odpověděl“)
-    responded_ids = set(participant_responses.keys())
-    for p in session.participants.all():
-        if p.id not in responded_ids:
-            no_answer_responses.append(p)
+    answer_stats, participant_responses, correct_responses, wrong_responses, no_answer_responses = _get_question_stats(qrun)
     
-    return render(
-        request,
-        "quiz/session_question.html",
-        {
-            "session": session,
-            "qrun": qrun,
-            "remaining": remaining,
-            "is_host": is_host,
-            "total_participants": total_participants,
-            "answered_count": answered_count,
-            "all_answered": all_answered,
-            "next_exists": next_exists,
-            "answer_stats": answer_stats,
-            "participants": session.participants.all(),
-            "participant_responses": participant_responses,
-            "correct_responses": correct_responses,
-            "wrong_responses": wrong_responses,
-            "no_answer_responses": no_answer_responses,
-        },
-    )
+    return render(request, "quiz/session_question.html", {
+        "session": session,
+        "qrun": qrun,
+        "remaining": remaining,
+        "time_over": time_over,
+        "is_host": True,
+        "total_participants": total_participants,
+        "answered_count": answered_count,
+        "all_answered": all_answered,
+        "next_exists": QuestionRun.objects.filter(session=session, order=order + 1).exists(),
+        "answer_stats": answer_stats,
+        "participants": session.participants.all(),
+        "participant_responses": participant_responses,
+        "correct_responses": correct_responses,
+        "wrong_responses": wrong_responses,
+        "no_answer_responses": no_answer_responses,
+    })
 
 
 @login_required
 def session_submit_answer(request, hash, order):
+    """Uložení odpovědi studenta pro právě běžící otázku."""
     session = get_object_or_404(QuizSession, hash=hash, is_active=True)
     qrun = get_object_or_404(QuestionRun, session=session, order=order)
+    
     if request.user == session.host:
         messages.error(request, "Učitel nemůže odesílat odpovědi.")
         return redirect("session_question_view", hash=hash, order=order)
-    participant, _ = Participant.objects.get_or_create(session=session, user=request.user, defaults={"display_name": request.user.username})
+    
+    participant, _ = _get_or_create_participant(session, request.user)
+    
     if request.method == "POST":
-        answer_id = request.POST.get("answer_id")
-        # Kontrola času: 
-        # - Pokud starts_at je None, otázka ještě neběží - nelze odpovědět
-        # - Pokud ends_at je None, otázka nemá časový limit - může odpovědět
-        # - Pokud ends_at existuje, musí být ještě v čase
         can_answer = qrun.starts_at is not None and (qrun.ends_at is None or timezone.now() <= qrun.ends_at)
         
-        if answer_id and can_answer:
-            existing = Response.objects.filter(question_run=qrun, participant=participant).exists()
-            if not existing:
+        if (answer_id := request.POST.get("answer_id")) and can_answer:
+            if not Response.objects.filter(question_run=qrun, participant=participant).exists():
                 answer = get_object_or_404(Answer, id=answer_id, question=qrun.question)
-                Response.objects.create(
-                    question_run=qrun,
-                    participant=participant,
-                    answer=answer,
-                    answered_at=timezone.now(),
-                )
+                Response.objects.create(question_run=qrun, participant=participant, answer=answer, answered_at=timezone.now())
                 messages.success(request, "Odpověď uložena.")
-                total_participants = session.participants.count()
-                answered_count = qrun.responses.values("participant_id").distinct().count()
-                if total_participants > 0 and answered_count >= total_participants and not qrun.ends_at:
+                
+                total_participants, answered_count, all_answered = _get_participant_stats(session, qrun)
+                if all_answered and not qrun.ends_at:
                     qrun.ends_at = timezone.now()
                     qrun.save(update_fields=["ends_at"])
                 
-                # Odeslat socket.io aktualizaci
-                from .socketio_handler import send_answer_update
                 send_answer_update(session.hash, qrun.order)
             else:
                 messages.info(request, "Už jsi odpověděl na tuto otázku.")
         elif not can_answer:
-            if qrun.starts_at is None:
-                messages.error(request, "Otázka ještě neběží. Počkejte, až učitel spustí otázku.")
-            else:
-                messages.error(request, "Čas na odpověď vypršel.")
+            messages.error(request, "Otázka ještě neběží. Počkejte, až učitel spustí otázku." if qrun.starts_at is None else "Čas na odpověď vypršel.")
+        
         return redirect("session_question_view", hash=hash, order=order)
+    
     return redirect("session_lobby", hash=hash)
 
 
 @login_required
 def session_question_view(request, hash, order):
+    """Zobrazení stránky otázky."""
     session = get_object_or_404(QuizSession, hash=hash, is_active=True)
     qrun = get_object_or_404(QuestionRun, session=session, order=order)
-    remaining = max(0, int((qrun.ends_at - timezone.now()).total_seconds())) if qrun.ends_at else 0
-    time_over = remaining == 0 and qrun.ends_at is not None and timezone.now() >= qrun.ends_at
+    
+    remaining, time_over = _get_question_timing(qrun)
     is_host = request.user == session.host
-    # Kontrola, jestli otázka už běží
     question_started = qrun.starts_at is not None
-    total_participants = session.participants.count()
-    answered_count = qrun.responses.values("participant_id").distinct().count()
-    all_answered = total_participants > 0 and answered_count >= total_participants
-    next_exists = QuestionRun.objects.filter(session=session, order=order + 1).exists()
+    total_participants, answered_count, all_answered = _get_participant_stats(session, qrun)
+    
     has_answered = False
     participant = None
     if not is_host and request.user.is_authenticated:
-        # Vytvoř participant pokud neexistuje (student se může připojit přímo na otázku)
-        participant, _ = Participant.objects.get_or_create(
-            session=session, 
-            user=request.user, 
-            defaults={"display_name": request.user.username}
-        )
+        participant, _ = _get_or_create_participant(session, request.user)
         has_answered = qrun.responses.filter(participant=participant).exists()
     
-    # Statistiky odpovědí pro učitele
-    answer_stats = {}
-    participant_responses = {}
-    correct_responses = []
-    wrong_responses = []
-    no_answer_responses = []
-    if is_host:
-        # Počítání odpovědí pro každou možnost
-        for answer in qrun.question.answers.all():
-            count = qrun.responses.filter(answer=answer).count()
-            answer_stats[answer.id] = {
-                'answer': answer,
-                'count': count,
-                'is_correct': answer.is_correct
-            }
-        
-        # Seznam účastníků a jejich odpovědi - rozděleno na správné a špatné
-        for response in qrun.responses.select_related('participant', 'answer').all():
-            response_data = {
-                'participant': response.participant,
-                'answer': response.answer,
-                'is_correct': response.is_correct,
-                'answered_at': response.answered_at
-            }
-            participant_responses[response.participant.id] = response_data
-            if response.is_correct:
-                correct_responses.append(response_data)
-            else:
-                wrong_responses.append(response_data)
-        
-        # Účastníci, kteří zatím neodpověděli
-        responded_ids = set(participant_responses.keys())
-        for p in session.participants.all():
-            if p.id not in responded_ids:
-                no_answer_responses.append(p)
-    
-    return render(
-        request,
-        "quiz/session_question.html",
-        {
-            "session": session,
-            "qrun": qrun,
-            "remaining": remaining,
-            "time_over": time_over,
-            "is_host": is_host,
-            "question_started": question_started,
-            "total_participants": total_participants,
-            "answered_count": answered_count,
-            "all_answered": all_answered,
-            "next_exists": next_exists,
-            "has_answered": has_answered,
-            "answer_stats": answer_stats,
-            "participants": session.participants.all(),
-            "participant_responses": participant_responses,
-            "correct_responses": correct_responses,
-            "wrong_responses": wrong_responses,
-            "no_answer_responses": no_answer_responses,
-        },
+    answer_stats, participant_responses, correct_responses, wrong_responses, no_answer_responses = (
+        _get_question_stats(qrun) if is_host else ({}, {}, [], [], [])
     )
+    
+    return render(request, "quiz/session_question.html", {
+        "session": session,
+        "qrun": qrun,
+        "remaining": remaining,
+        "time_over": time_over,
+        "is_host": is_host,
+        "question_started": question_started,
+        "total_participants": total_participants,
+        "answered_count": answered_count,
+        "all_answered": all_answered,
+        "next_exists": QuestionRun.objects.filter(session=session, order=order + 1).exists(),
+        "has_answered": has_answered,
+        "answer_stats": answer_stats,
+        "participants": session.participants.all(),
+        "participant_responses": participant_responses,
+        "correct_responses": correct_responses,
+        "wrong_responses": wrong_responses,
+        "no_answer_responses": no_answer_responses,
+    })
 
 
 @login_required
 def session_current_question(request, hash):
+    """Přesměrování na aktuálně běžící otázku."""
     session = get_object_or_404(QuizSession, hash=hash, is_active=True)
-    now = timezone.now()
-    current = (
-        session.question_runs
-        .filter(starts_at__isnull=False)
-        .filter(Q(ends_at__isnull=True) | Q(ends_at__gt=now))
-        .order_by("order")
-        .last()
-    )
+    current = _get_current_question_run(session)
+    
     if current:
         return redirect("session_question_view", hash=session.hash, order=current.order)
+    
     messages.info(request, "Zatím není spuštěná žádná otázka.")
     return redirect("session_lobby", hash=session.hash)
 
 
 @login_required
 def session_status(request, hash):
+    """AJAX endpoint pro stav sezení."""
     session = get_object_or_404(QuizSession, hash=hash)
+    
     if not session.is_active:
         return JsonResponse({"state": "finished"})
-    now = timezone.now()
-    current = (
-        session.question_runs
-        .filter(starts_at__isnull=False)
-        .filter(Q(ends_at__isnull=True) | Q(ends_at__gt=now))
-        .order_by("order")
-        .last()
-    )
-    # Vždy vracet počet účastníků (pro lobby refresh)
-    total_participants = session.participants.count()
+    
+    current = _get_current_question_run(session)
+    total_participants, _, _ = _get_participant_stats(session)
     
     if current:
-        response_data = {
-            "state": "question", 
-            "order": current.order,
-            "total_participants": total_participants
-        }
+        response_data = {"state": "question", "order": current.order, "total_participants": total_participants}
         
-        # Pro učitele: přidat statistiky odpovědí
         if request.user == session.host:
-            answer_stats = {}
-            correct_answer_ids = []
-            for answer in current.question.answers.all():
-                count = current.responses.filter(answer=answer).count()
-                answer_stats[str(answer.id)] = count
-                if answer.is_correct:
-                    correct_answer_ids.append(str(answer.id))
-            
-            answered_count = current.responses.values("participant_id").distinct().count()
-            all_answered = total_participants > 0 and answered_count >= total_participants
-            
-            remaining = max(0, int((current.ends_at - timezone.now()).total_seconds())) if current.ends_at else 0
+            answers = current.question.answers.all()
+            answer_stats = {str(a.id): current.responses.filter(answer=a).count() for a in answers}
+            _, answered_count, all_answered = _get_participant_stats(session, current)
+            remaining, _ = _get_question_timing(current)
             
             response_data.update({
                 "answered_count": answered_count,
                 "total_participants": total_participants,
                 "all_answered": all_answered,
                 "answer_stats": answer_stats,
-                "correct_answer_ids": correct_answer_ids,  # Přidat seznam správných odpovědí
+                "correct_answer_ids": [str(a.id) for a in answers if a.is_correct],
                 "remaining": remaining
             })
         
         return JsonResponse(response_data)
-    return JsonResponse({
-        "state": "waiting",
-        "total_participants": total_participants
-    })
+    
+    return JsonResponse({"state": "waiting", "total_participants": total_participants})
 
 
 @login_required
 def session_finish(request, hash):
+    """Ukončení živého sezení."""
     session = get_object_or_404(QuizSession, hash=hash, host=request.user)
     session.is_active = False
     session.finished_at = timezone.now()
     session.save(update_fields=["is_active", "finished_at"])
     
-    # Odeslat socket.io událost
-    from .socketio_handler import send_session_status
     send_session_status(session.hash)
     
     return redirect("session_results", hash=hash)
@@ -583,35 +461,36 @@ def session_finish(request, hash):
 
 @login_required
 def session_results(request, hash):
+    """Finální výsledky sezení."""
     session = get_object_or_404(QuizSession, hash=hash)
-    is_host = request.user == session.host
     scores = {}
     for resp in Response.objects.filter(question_run__session=session, is_correct=True).select_related("participant"):
         scores[resp.participant_id] = scores.get(resp.participant_id, 0) + 1
-    leaderboard = [
-        {
-            "participant": p,
-            "score": scores.get(p.id, 0),
-        }
-        for p in session.participants.all()
-    ]
-    leaderboard.sort(key=lambda item: item["score"], reverse=True)
-    return render(
-        request,
-        "quiz/session_results.html",
-        {"session": session, "leaderboard": leaderboard, "is_host": is_host},
+    
+    leaderboard = sorted(
+        [{"participant": p, "score": scores.get(p.id, 0)} for p in session.participants.all()],
+        key=lambda x: x["score"], reverse=True
     )
+    
+    return render(request, "quiz/session_results.html", {
+        "session": session,
+        "leaderboard": leaderboard,
+        "is_host": request.user == session.host
+    })
 
 
 @login_required
 def session_results_csv(request, hash):
+    """Export výsledků do CSV."""
     session = get_object_or_404(QuizSession, hash=hash)
     if request.user != session.host:
         return HttpResponse(status=403)
+    
     response = HttpResponse(content_type='text/csv')
     response["Content-Disposition"] = f"attachment; filename=results_{session.code}.csv"
     writer = csv.writer(response)
     writer.writerow(["participant", "question", "answer", "is_correct", "response_ms"])
+    
     for r in Response.objects.filter(question_run__session=session).select_related("participant", "question_run", "answer", "question_run__question"):
         writer.writerow([
             r.participant.display_name,
@@ -620,4 +499,5 @@ def session_results_csv(request, hash):
             "1" if r.is_correct else "0",
             r.response_ms,
         ])
+    
     return response

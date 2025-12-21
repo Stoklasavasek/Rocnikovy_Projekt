@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="container">
-  <div class="card pad" style="max-width:460px;margin:40px auto;">
-    <h2 style="margin:0 0 12px;">Odhlášení</h2>
+  <div class="card pad auth-container">
+    <h2 class="auth-form-title">Odhlášení</h2>
     <p>Opravdu se chceš odhlásit?</p>
-    <form method="post" action="{% url 'account_logout' %}" style="margin-top:16px;display:flex;gap:12px;align-items:center;">
+    <form method="post" action="{% url 'account_logout' %}" class="auth-form-actions">
       {% csrf_token %}
       <button class="btn primary" type="submit">Odhlásit</button>
       <a class="btn" href="/">Zrušit</a>

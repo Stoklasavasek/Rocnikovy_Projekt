@@ -2,8 +2,8 @@
 {% load socialaccount %}
 {% block content %}
 <div class="container">
-  <div class="card pad" style="max-width:520px;margin:48px auto; text-align:center;">
-    <h2 style="margin:0 0 8px;">Přihlášení přes Microsoft</h2>
+  <div class="card pad auth-container" style="text-align:center;">
+    <h2 class="auth-form-title" style="margin-bottom:8px;">Přihlášení přes Microsoft</h2>
     <p style="color:#666;margin:0 0 16px;">Za okamžik budete přesměrováni na přihlašovací stránku Microsoftu…</p>
     <form id="ms-login-form" method="post" action="">
       {% csrf_token %}
@@ -13,9 +13,8 @@
   </div>
 </div>
 <script>
-  // Auto-submit formuláře po krátkém zpoždění, aby allauth mohl vytvořit OAuth request
-  setTimeout(function(){
-    var f = document.getElementById('ms-login-form');
+  setTimeout(() => {
+    const f = document.getElementById('ms-login-form');
     if (f) f.submit();
   }, 200);
 </script>

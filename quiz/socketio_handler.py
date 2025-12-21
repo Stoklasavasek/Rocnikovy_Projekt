@@ -1,78 +1,67 @@
-"""
-Socket.IO handler pro real-time komunikaci v kvízech
-Komunikuje s externím socket.io serverem
-"""
+"""Socket.IO handler pro real-time komunikaci v kvízech."""
 import socketio
-from .models import QuizSession, QuestionRun
-from django.utils import timezone
-from django.db.models import Q
 import threading
+import time
+
+from django.db.models import Q
+from django.utils import timezone
+
+from .models import QuizSession, QuestionRun
 
 # Klient pro připojení k socket.io serveru
 socketio_client = None
 _client_lock = threading.Lock()
+SOCKETIO_URL = 'http://localhost:8001'
+
 
 def get_socketio_client():
-    """Získat nebo vytvořit socket.io klienta"""
+    """Získat nebo vytvořit socket.io klienta."""
     global socketio_client
     with _client_lock:
-        if socketio_client is None:
+        if socketio_client is None or not socketio_client.connected:
             socketio_client = socketio.Client()
             try:
-                socketio_client.connect('http://localhost:8001', wait_timeout=5, transports=['polling', 'websocket'])
-            except Exception:
-                pass
-        elif not socketio_client.connected:
-            try:
-                socketio_client.connect('http://localhost:8001', wait_timeout=5, transports=['polling', 'websocket'])
+                socketio_client.connect(SOCKETIO_URL, wait_timeout=5, transports=['polling', 'websocket'])
             except Exception:
                 pass
         return socketio_client
 
+
+def _get_current_question_run(session):
+    """Vrátí aktuálně běžící otázku v sezení."""
+    now = timezone.now()
+    return (
+        session.question_runs
+        .filter(starts_at__isnull=False)
+        .filter(Q(ends_at__isnull=True) | Q(ends_at__gt=now))
+        .order_by("order")
+        .last()
+    )
+
+
 def send_session_status(session_hash):
-    """Odeslat stav session přes socket.io"""
+    """Odeslat stav session přes socket.io."""
     try:
         client = get_socketio_client()
         if not client.connected:
             return
         
         session = QuizSession.objects.get(hash=session_hash)
-        
         if not session.is_active:
-            client.emit('broadcast_session_state', {
-                'hash': session_hash,
-                'state': 'finished'
-            })
+            client.emit('broadcast_session_state', {'hash': session_hash, 'state': 'finished'})
             return
         
-        now = timezone.now()
-        current = (
-            session.question_runs
-            .filter(starts_at__isnull=False)
-            .filter(Q(ends_at__isnull=True) | Q(ends_at__gt=now))
-            .order_by("order")
-            .last()
-        )
-        
+        current = _get_current_question_run(session)
+        data = {'hash': session_hash, 'state': 'question' if current else 'waiting'}
         if current:
-            data = {
-                'hash': session_hash,
-                'state': 'question',
-                'order': current.order
-            }
-            client.emit('broadcast_session_state', data)
-        else:
-            data = {
-                'hash': session_hash,
-                'state': 'waiting'
-            }
-            client.emit('broadcast_session_state', data)
-    except Exception as e:
-        # Pokud socket.io není dostupný, ignorujeme chybu
+            data['order'] = current.order
+        client.emit('broadcast_session_state', data)
+    except Exception:
         pass
 
+
 def send_answer_update(session_hash, question_order):
-    """Odeslat aktualizaci odpovědí přes socket.io"""
+    """Odeslat aktualizaci odpovědí přes socket.io."""
     try:
         client = get_socketio_client()
         if not client.connected:
@@ -80,37 +69,22 @@ def send_answer_update(session_hash, question_order):
         
         session = QuizSession.objects.get(hash=session_hash)
         qrun = QuestionRun.objects.filter(session=session, order=question_order).first()
-        
         if not qrun:
             return
         
-        # Statistiky odpovědí
-        answer_stats = {}
-        for answer in qrun.question.answers.all():
-            count = qrun.responses.filter(answer=answer).count()
-            answer_stats[str(answer.id)] = count
-        
+        answers = qrun.question.answers.all()
+        answer_stats = {str(a.id): qrun.responses.filter(answer=a).count() for a in answers}
         total_participants = session.participants.count()
         answered_count = qrun.responses.values("participant_id").distinct().count()
-        all_answered = total_participants > 0 and answered_count >= total_participants
         
-        data = {
+        client.emit('broadcast_answer_update', {
             'hash': session_hash,
             'question_order': question_order,
             'answered_count': answered_count,
             'total_participants': total_participants,
-            'all_answered': all_answered,
+            'all_answered': total_participants > 0 and answered_count >= total_participants,
             'answer_stats': answer_stats
-        }
-        
-        # Odeslat event na Socket.IO server
-        client.emit('broadcast_answer_update', data)
-        # Pro jistotu počkat chvíli, aby se event odeslal
-        import time
+        })
         time.sleep(0.1)
-    except Exception as e:
-        # Pro debug - v produkci odstranit
-        import sys
-        print(f"Error sending answer update: {e}", file=sys.stderr)
+    except Exception:
         pass
-

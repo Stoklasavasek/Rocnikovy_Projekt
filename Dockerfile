@@ -1,20 +1,18 @@
-# Use an official Python runtime based on Debian 12 "bookworm" as a parent image.
 FROM python:3.12-slim-bookworm
 
-# Add user that will be used in the container.
+# V kontejneru používáme neprivilegovaného uživatele "wagtail".
 RUN useradd wagtail
 
-# Port used by this container to serve HTTP.
+# Výchozí port pro Django / Gunicorn.
 EXPOSE 8000
 
-# Set environment variables.
-# 1. Force Python stdout and stderr streams to be unbuffered.
-# 2. Set PORT variable that is used by Gunicorn. This should match "EXPOSE"
-#    command.
+# Základní proměnné prostředí:
+# - PYTHONUNBUFFERED: okamžitý výpis logů do STDOUT,
+# - PORT: port, na kterém běží Gunicorn (musí souhlasit s EXPOSE).
 ENV PYTHONUNBUFFERED=1 \
     PORT=8000
 
-# Install system packages required by Wagtail and Django.
+# Systemové balíčky potřebné pro Django, Wagtail a nástroje kolem Graphvizu.
 RUN apt-get update --yes --quiet && apt-get install --yes --quiet --no-install-recommends \
     build-essential \
     libpq-dev \
@@ -22,35 +20,35 @@ RUN apt-get update --yes --quiet && apt-get install --yes --quiet --no-install-r
     libjpeg62-turbo-dev \
     zlib1g-dev \
     libwebp-dev \
+    graphviz \
  && rm -rf /var/lib/apt/lists/*
 
-# Install the application server.
+# Aplikační server – Gunicorn.
 RUN pip install "gunicorn==20.0.4"
 
-# Install the project requirements.
+# Závislosti projektu.
 COPY requirements.txt /
 RUN pip install -r /requirements.txt
 
-# Use /app folder as a directory where the source code is stored.
+# `/app` je kořen projektu uvnitř kontejneru.
 WORKDIR /app
 
-# Set this directory to be owned by the "wagtail" user. This Wagtail project
-# uses SQLite, the folder needs to be owned by the user that
-# will be writing to the database file.
+# Nastavení vlastníka složky, aby mohl zapisovat např. do SQLite / media.
 RUN chown wagtail:wagtail /app
 
-# Copy the source code of the project into the container.
+# Kopie zdrojového kódu do kontejneru.
 COPY --chown=wagtail:wagtail . .
 
-# Copy entrypoint script
+# Entrypoint skript, který spouští Django (Gunicorn) + Socket.IO server.
 COPY --chown=wagtail:wagtail docker-entrypoint.sh /app/docker-entrypoint.sh
 RUN chmod +x /app/docker-entrypoint.sh
 
-# Use user "wagtail" to run the build commands below and the server itself.
+# Vše běží pod uživatelem "wagtail".
 USER wagtail
 
-# Expose both ports
+# Otevíráme porty pro:
+# - 8000: Django (Gunicorn),
+# - 8001: Socket.IO server.
 EXPOSE 8000 8001
 
-# Use entrypoint script to run both servers
 ENTRYPOINT ["/app/docker-entrypoint.sh"]

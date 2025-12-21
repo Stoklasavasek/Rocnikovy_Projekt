@@ -1,230 +1,146 @@
-## Kahoot pro školy – Django aplikace s Wagtail
+## QuizIT! – Django + Wagtail + Docker
 
-Krátká webová aplikace ve stylu Kahoot pro školy. Umožňuje učitelům vytvářet kvízy, otázky a odpovědi a studentům se připojit pomocí kódu a odesílat své odpovědi. Součástí je i Wagtail CMS pro správu obsahu.
+Webová aplikace pro interaktivní kvízy ve stylu Kahoot pro školy.  
+Učitel vytváří kvízy, otázky a odpovědi, studenti se připojují kódem a odpovídají v reálném čase. Výsledky vidí jak studenti, tak učitel (průběžné i finální hodnocení).
 
-Odkaz inspirace/kontext: [README v repozitáři Rocnikovy_Projekt](https://github.com/Stoklasavasek/Rocnikovy_Projekt/blob/main/README.md)
+### Použité technologie
+- **Backend**: Django 4.2
+- **CMS**: Wagtail 7
+- **Databáze**: PostgreSQL (v Dockeru)
+- **Autentizace**: `django-allauth`
+- **Real-time**: `python-socketio` + samostatný Socket.IO server (v Dockeru, port 8001)
+- **Front-end**: Django šablony + vlastní CSS (`kahootapp/static/css/kahootapp.css`)
+- **Název aplikace**: QuizIT!
+- **Modelový diagram**: `django-extensions` + Graphviz (`media/quiz_models.png`)
 
-### Hlavní funkce
-- Tvorba kvízů učitelem (název, automaticky generovaný kód pro připojení)
-- Správa otázek a odpovědí (správné/nesprávné)
-- Připojení studenta do kvízu pomocí join kódu
-- Vyhodnocení odpovědí (správnost se vyhodnocuje automaticky)
-- Wagtail stránky pro správu obsahu (volitelné)
+---
 
-### Technologie
-- Backend: Django
-- CMS: Wagtail
-- Databáze: SQLite (výchozí, pro produkci doporučen PostgreSQL)
-- Autentizace: Django auth (s možností rozšíření o `django-allauth`)
+### Jak projekt spustit (Docker, to používáš teď)
 
-### Rychlý start
+Požadavky:
+- Docker + Docker Compose (Docker Desktop na macOS/Windows, nebo docker/docker-compose na Linuxu)
 
-#### Varianta A: S Dockerem (doporučeno - nejjednodušší)
+V kořeni projektu (`/Users/vaclavstoklasa/Desktop/projekt/28.10/krasa`) spusť:
 
-**Instalace Dockeru přes terminál:**
-
-**macOS:**
 ```bash
-# 1. Nainstalovat Homebrew (pokud ho nemáš)
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+cd /Users/vaclavstoklasa/Desktop/projekt/28.10/krasa
 
-# 2. Nainstalovat Docker Desktop
-brew install --cask docker
+# build image (použij při prvním spuštění nebo po změně Dockerfile / requirements.txt)
+docker-compose build web
 
-# 3. Spustit Docker Desktop (poprvé musíš spustit aplikaci ručně)
-open /Applications/Docker.app
-
-# 4. Počkat, až se Docker spustí (ikona v menu bar)
+# start databáze + Django + Socket.IO server
+docker-compose up -d
 ```
 
-**Linux (Ubuntu/Debian):**
-```bash
-# 1. Aktualizovat balíčky
-sudo apt update
+Aplikace pak běží na:
 
-# 2. Nainstalovat Docker
-sudo apt install docker.io docker-compose -y
+- **Django (web)**: `http://localhost:8000`
+- **Socket.IO server**: `http://localhost:8001` (používají ho prohlížeče, ty ho ručně neotvíráš)
 
-# 3. Spustit Docker službu
-sudo systemctl start docker
-sudo systemctl enable docker
+Zastavení:
 
-# 4. Přidat uživatele do docker skupiny (aby nemusel sudo)
-sudo usermod -aG docker $USER
-
-# 5. Odhlásit se a znovu přihlásit (nebo restartovat terminál)
-# Pak už můžeš používat docker bez sudo
-```
-
-**Windows (WSL2):**
-```bash
-# 1. Nainstalovat WSL2 (v PowerShell jako admin)
-wsl --install
-
-# 2. Restartovat počítač
-
-# 3. V WSL terminálu nainstalovat Docker
-sudo apt update
-sudo apt install docker.io docker-compose -y
-
-# 4. Spustit Docker službu
-sudo service docker start
-```
-
-**Ověření instalace:**
-```bash
-docker --version
-docker-compose --version
-```
-
-Pokud příkazy fungují, Docker je nainstalovaný!
-
-**Postup po instalaci Dockeru:**
-```bash
-# 1. Stáhnout projekt
-git clone <repo-url>
-cd krasa
-
-# 2. První spuštění (stáhne images a nainstaluje vše)
-docker-compose up --build
-```
-
-**Opakované spuštění:**
-```bash
-docker-compose up
-```
-
-**Zastavení:**
 ```bash
 docker-compose down
 ```
 
-**Zastavení a smazání databáze:**
+Plné smazání databáze (reset dat):
+
 ```bash
 docker-compose down -v
 rm -rf data/
 ```
 
-Docker automaticky:
-- Postaví Docker image (pouze při prvním spuštění nebo při změně Dockerfile/requirements.txt)
-- Spustí PostgreSQL databázi
-- Spustí Django server (port 8000)
-- Spustí Socket.IO server (port 8001)
-
-Aplikace bude dostupná na: `http://localhost:8000`
-
-**Poznámka:** `--build` je potřeba jen poprvé nebo když změníš `Dockerfile` nebo `requirements.txt`. Další spuštění jsou rychlá díky Docker cache.
-
 ---
 
-#### Varianta B: Bez Dockeru (klasický způsob)
+### Jak projekt spustit bez Dockeru (jen pro vývoj / školní PC)
 
-**Požadavky:**
-- Python 3.9+
-- PostgreSQL (volitelně, výchozí je SQLite)
+Požadavky:
+- Python 3.10+
+- (Volitelně) PostgreSQL, jinak můžeš použít SQLite po úpravě settings.
 
-**Postup:**
-1) Vytvoření a aktivace virtuálního prostředí
 ```bash
+cd /Users/vaclavstoklasa/Desktop/projekt/28.10/krasa
+
+# vytvoření virtuálního prostředí
 python3 -m venv .venv
 source .venv/bin/activate
-```
 
-2) Instalace závislostí
-```bash
+# instalace závislostí
 pip install -r requirements.txt
-```
 
-3) Migrace a spuštění
-```bash
+# migrace databáze
 python manage.py migrate
-python manage.py runserver
-```
 
-4) V **samostatném terminálu** spustit Socket.IO server:
-```bash
-source .venv/bin/activate
-python socketio_server.py
+# spuštění Django serveru
+python manage.py runserver
 ```
 
 Aplikace poběží na `http://127.0.0.1:8000/`.
 
-5) Administrátor (superuser)
+Socket.IO server (pokud bys ho chtěl spouštět mimo Docker):
+
 ```bash
-python manage.py createsuperuser
-```
-Přihlášení do adminu: `http://127.0.0.1:8000/admin/`
-
-### Role a oprávnění
-V aplikaci jsou používány tři role:
-- Admin: superuser, má plná oprávnění v Django adminu i aplikaci.
-- Učitel (Teacher): člen skupiny `Teacher` nebo uživatel se statusem staff (viz `quiz/roles.py`).
-- Student: běžný uživatel bez přístupu do adminu.
-
-Nastavení doporučení:
-- V adminu vytvoř skupinu `Teacher` a přiřaď ji učitelům. Učitelům můžeš nechat `is_staff = True` pro přístup do adminu.
-- Studentům `is_staff = False`, nepřiřazuj skupinu `Teacher`.
-
-Kontroly v kódu:
-- `quiz/roles.py` obsahuje:
-  - `user_is_teacher(user)`: vrátí True, pokud je uživatel ve skupině `Teacher` nebo má `is_staff = True`.
-  - `teacher_required(view)`: dekorátor pro omezení přístupu na učitelské obrazovky.
-
-Chování můžeš upravit tak, aby učitelem byl pouze člen skupiny (bez `is_staff`).
-
-### Modely a vztahy
-Datové modely hlavní aplikace jsou v `quiz/models.py`:
-- `Quiz` (title, created_by, join_code)
-- `Question` (text, vazba na `Quiz`)
-- `Answer` (text, is_correct, vazba na `Question`)
-- `StudentAnswer` (student, question, selected_answer, correct)
-
-Textový popis modelů a vztahů (pro jednoduché vygenerování diagramu) je uložen v:
-- `MODELS_TEXT.txt` (v kořeni projektu)
-
-Volitelně můžeš vytvořit i diagram (Mermaid/obrázek). Pokud nechceš řešit Graphviz, vlož obsah z `MODELS_TEXT.txt` do nástroje, který ti vygeneruje ERD.
-
-### Struktura projektu (zkráceně)
-- `kahootapp/` – projektové nastavení a šablony
-- `quiz/` – jádro aplikace (modely, pohledy, šablony kvízu)
-- `home/` – Wagtail HomePage, statiky a šablony
-- `search/` – vyhledávání
-- `db.sqlite3` – lokální databáze
-- `requirements.txt` – závislosti
-
-### Užitečné příkazy
-- Spuštění serveru: `python manage.py runserver`
-- Migrace: `python manage.py makemigrations && python manage.py migrate`
-- Vytvoření admina: `python manage.py createsuperuser`
-
-### Poznámky
-- Pro produkční nasazení použij PostgreSQL a nastav proměnné prostředí (SECRET_KEY, DEBUG=False atd.).
-- Wagtail oprávnění nastav ve skupinách podle potřeby (přístup do Wagtail adminu, práva ke stránkám, dokumentům a obrázkům).
-
-
-### Socket.IO - Real-time komunikace
-
-Aplikace používá Socket.IO pro real-time aktualizace během kvízů.
-
-**Spuštění:**
-
-1. Spusť Django server (port 8000):
-```bash
-python manage.py runserver
-```
-
-2. V **samostatném terminálu** spusť Socket.IO server (port 8001):
-```bash
+source .venv/bin/activate
 python socketio_server.py
 ```
 
-**Funkce:**
-- Real-time aktualizace stavu session (waiting/question/finished)
-- Real-time aktualizace statistik odpovědí pro učitele
-- Automatické přesměrování při změně otázky
-- Fallback na polling pokud Socket.IO není dostupný
+---
 
+### Role a oprávnění
 
-### Implementované funkce
-- hash URL - generátor hash pro session URL
-- vyhodnocování postupně mezi otázkami
+V aplikaci jsou tři základní typy uživatelů:
+- **Admin** – Django superuser, plná práva (`/django-admin/`, Wagtail, nastavení).
+- **Učitel (Teacher)** – vytváří a spouští kvízy, vidí průběžné výsledky, ovládá sezení.
+- **Student** – připojuje se k sezení pomocí kódu a odpovídá na otázky.
+
+Role učitele je určena funkcí v `quiz/roles.py`:
+- `user_is_teacher(user)` – rozpozná učitele (skupina Teacher / staff).
+- `teacher_required` – dekorátor pro ochranu učitelských view.
+
+---
+
+### Struktura projektu (zjednodušeně)
+
+- `kahootapp/` – projekt, globální šablony, nastavení (dev/production).
+- `quiz/` – hlavní logika kvízů (modely, view, šablony, Socket.IO integrace).
+- `home/` – Wagtail stránka (úvodní/welcome screen).
+- `search/` – jednoduché vyhledávání.
+- `static/`, `kahootapp/static/`, `home/static/` – CSS, JS a obrázky.
+- `media/` – nahrané soubory (obrázky otázek, diagram modelů apod.).
+
+Hlavní modely jsou v `quiz/models.py`:
+- `Quiz`, `Question`, `Answer`, `StudentAnswer`
+- `QuizSession`, `Participant`, `QuestionRun`, `Response`
+
+---
+
+### Generování diagramu modelů (volitelné)
+
+Pro appku `quiz` máš nastavené:
+- `django-extensions` v `INSTALLED_APPS`
+- `graphviz` a `pydotplus` v `requirements.txt`
+
+Jak znovu vygenerovat diagram:
+
+```bash
+cd /Users/vaclavstoklasa/Desktop/projekt/28.10/krasa
+
+# vygeneruje .dot soubor do sdíleného adresáře media (uvnitř kontejneru)
+docker-compose exec web python manage.py graph_models quiz --dot -o /app/media/quiz_models.dot
+
+# na host systému vytvoří PNG z .dot
+dot -Tpng media/quiz_models.dot -o media/quiz_models.png
+```
+
+Výsledný obrázek najdeš jako `media/quiz_models.png`.
+
+---
+
+### Užitečné příkazy (shrnutí)
+
+- Spuštění přes Docker: `docker-compose up -d`
+- Zastavení: `docker-compose down`
+- Migrace uvnitř Dockeru:  
+  `docker-compose exec web python manage.py migrate`
+- Vytvoření admin účtu:  
+  `docker-compose exec web python manage.py createsuperuser`

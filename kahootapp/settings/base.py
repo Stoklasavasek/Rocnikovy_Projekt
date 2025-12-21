@@ -14,9 +14,14 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 import os
 from pathlib import Path
 
+# Cesty k projektu:
+# - PROJECT_DIR: adresář se složkou `kahootapp/settings/`
+# - BASE_DIR: kořen repozitáře (tam je manage.py, README atd.)
 PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BASE_DIR = os.path.dirname(PROJECT_DIR)
 
+# Jednoduché načtení .env souboru z kořene projektu.
+# Lze v něm přepsat např. přístupy do DB nebo MS OAuth bez úprav kódu.
 env_path = Path(BASE_DIR) / ".env"
 if env_path.exists():
     with open(env_path) as f:
@@ -26,19 +31,24 @@ if env_path.exists():
                 key, value = line.split("=", 1)
                 os.environ.setdefault(key.strip(), value.strip().strip('"').strip("'"))
 
+# Základní nastavení stránek a přesměrování po loginu/logoutu.
 SITE_ID = 1
 LOGIN_REDIRECT_URL = "/"   
 LOGOUT_REDIRECT_URL = "/"  
 
+# Autentizační backendy – klasický Django + allauth (účty a sociální login).
 AUTHENTICATION_BACKENDS = [
     "django.contrib.auth.backends.ModelBackend",
     "allauth.account.auth_backends.AuthenticationBackend",
 ]
 
+# Nastavení allauth – přihlášení jménem i e‑mailem, bez povinného ověření e‑mailu.
 ACCOUNT_EMAIL_VERIFICATION = "none"
 ACCOUNT_AUTHENTICATION_METHOD = "username_email"
 ACCOUNT_EMAIL_REQUIRED = False
 ACCOUNT_USERNAME_REQUIRED = True
+
+# Microsoft provider pro OAuth login. Hodnoty se berou z env proměnných.
 SOCIALACCOUNT_PROVIDERS = {
     "microsoft": {
         "APP": {
@@ -55,6 +65,7 @@ SOCIALACCOUNT_PROVIDERS = {
 
 
 
+# Hlavní aplikace projektu a závislosti (Django, Wagtail, allauth, atd.).
 INSTALLED_APPS = [
     "django.contrib.sites",
     "allauth",
@@ -63,7 +74,6 @@ INSTALLED_APPS = [
     "allauth.socialaccount.providers.microsoft",
     "quiz",
     "home",
-    "search",
     "wagtail.contrib.forms",
     "wagtail.contrib.redirects",
     "wagtail.embeds",
@@ -83,8 +93,10 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django_extensions",
 ]
 
+# Middleware vrstvy – standardní Django + redirect middleware z Wagtailu.
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -96,8 +108,10 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "wagtail.contrib.redirects.middleware.RedirectMiddleware",
 ]
+# Kořenová konfigurace URL pro tento projekt.
 ROOT_URLCONF = "kahootapp.urls"
 
+# Nastavení šablon – Django template backend + globální složka `kahootapp/templates`.
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
@@ -118,7 +132,9 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "kahootapp.wsgi.application"
 
-# Databáze - PostgreSQL pokud jsou nastavené env proměnné, jinak SQLite
+# Databáze:
+# - v Dockeru běží PostgreSQL (přes env proměnné),
+# - pro lokální vývoj bez Dockeru se použije fallback na SQLite.
 db_name = os.environ.get("DB_NAME")
 if db_name:
     DATABASES = {
@@ -140,6 +156,7 @@ else:
         }
     }
 
+# Výchozí validační pravidla pro hesla uživatelů.
 AUTH_PASSWORD_VALIDATORS = [
     {
         "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
@@ -163,11 +180,15 @@ USE_I18N = True
 
 USE_TZ = True
 
+# Hledání statických souborů – systémová složka + složky jednotlivých app.
 STATICFILES_FINDERS = [
     "django.contrib.staticfiles.finders.FileSystemFinder",
     "django.contrib.staticfiles.finders.AppDirectoriesFinder",
 ]
 
+    # Statika:
+    # - STATICFILES_DIRS: zdrojové statické soubory pro collectstatic,
+    # - STATIC_ROOT: cílová složka po collectstatic (použitá v produkci).
 STATICFILES_DIRS = [
     os.path.join(PROJECT_DIR, "static"),
 ]
@@ -175,9 +196,11 @@ STATICFILES_DIRS = [
 STATIC_ROOT = os.path.join(BASE_DIR, "static")
 STATIC_URL = "/static/"
 
+# Média nahraná uživateli (obrázky otázek, diagram modelů, ...).
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 MEDIA_URL = "/media/"
 
+# Backend pro ukládání souborů – lokální filesystem (žádné S3 apod.).
 STORAGES = {
     "default": {
         "BACKEND": "django.core.files.storage.FileSystemStorage",
@@ -189,7 +212,8 @@ STORAGES = {
 
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 10_000
 
-WAGTAIL_SITE_NAME = "kahootapp"
+# Základní nastavení Wagtailu (název, fulltextové vyhledávání, URL admina).
+WAGTAIL_SITE_NAME = "QuizIT!"
 
 WAGTAILSEARCH_BACKENDS = {
     "default": {
@@ -199,9 +223,11 @@ WAGTAILSEARCH_BACKENDS = {
 
 WAGTAILADMIN_BASE_URL = "http://example.com"
 
+# Povolené přípony dokumentů pro Wagtail dokumenty.
 WAGTAILDOCS_EXTENSIONS = ['csv', 'docx', 'key', 'odt', 'pdf', 'pptx', 'rtf', 'txt', 'xlsx', 'zip']
 
-# Fix pro django_tasks - zakázat enqueue_on_commit kvůli nekompatibilitě s Wagtail
+# Fix pro django_tasks - zakázat enqueue_on_commit kvůli nekompatibilitě s Wagtail.
+# Vše běží synchronně v rámci requestu, což je pro tento školní projekt v pohodě.
 TASKS = {
     "default": {
         "BACKEND": "django_tasks.backends.immediate.ImmediateBackend",

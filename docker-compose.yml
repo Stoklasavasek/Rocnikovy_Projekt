@@ -4,6 +4,7 @@ services:
     container_name: kahoot_postgres
     restart: unless-stopped
     environment:
+      # Základní konfigurace databáze pro vývoj / demo.
       POSTGRES_DB: kahoot
       POSTGRES_USER: kahoot_user
       POSTGRES_PASSWORD: kahoot_password
@@ -11,6 +12,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
+      # Persistentní data Postgresu na hostiteli (složka `data/postgres` v projektu).
       - ./data/postgres:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U kahoot_user -d kahoot"]
@@ -23,13 +25,13 @@ services:
     container_name: kahoot_app
     restart: unless-stopped
     ports:
-      - "8000:8000"  # Django
-      - "8001:8001"  # Socket.IO
+      - "8000:8000"  # Django (Gunicorn)
+      - "8001:8001"  # Socket.IO server
     depends_on:
       db:
         condition: service_healthy
     environment:
-      # PostgreSQL nastavení - aktivní pro Docker
+      # PostgreSQL nastavení – odpovídá hodnotám v sekci `db`.
       DB_ENGINE: django.db.backends.postgresql
       DB_NAME: kahoot
       DB_USER: kahoot_user
@@ -37,8 +39,10 @@ services:
       DB_HOST: db
       DB_PORT: 5432
     volumes:
+      # Sdílení media a static mezi hostem a kontejnerem.
       - ./media:/app/media
       - ./static:/app/static
+      # Přímé mountnutí šablon a statiky pro rychlý vývoj bez rebuildování image.
       - ./kahootapp/static:/app/kahootapp/static
       - ./home/static:/app/home/static
       - ./kahootapp/templates:/app/kahootapp/templates

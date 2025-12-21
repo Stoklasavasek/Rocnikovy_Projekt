@@ -1,141 +1,116 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="container" style="max-width:800px;">
-  <h1 style="font-size:clamp(20px, 4vw, 28px);margin-bottom:8px;">Lobby: {{ session.quiz.title }}</h1>
-  <p style="font-size:clamp(14px, 2.5vw, 16px);margin-bottom:20px;">Kód pro připojení: <strong style="font-size:clamp(18px, 3vw, 24px);color:var(--primary);">{{ session.code }}</strong></p>
+<div class="container lobby-container">
+  <h1 class="lobby-title">Lobby: {{ session.quiz.title }}</h1>
+  <p class="lobby-code">Kód pro připojení: <strong>{{ session.code }}</strong></p>
   
   {% if is_host %}
-    {# Teacher view #}
     <script>
-      // Automaticky refreshovat stránku učitele každé 2 sekundy, aby viděl nové účastníky
       (function() {
-        let lastParticipantCount = {{ session.participants.count }};
-        setInterval(async function() {
+        let lastCount = {{ session.participants.count }};
+        setInterval(async () => {
           try {
-            const res = await fetch("{% url 'session_status' session.hash %}", { 
-              headers: { 'X-Requested-With': 'XMLHttpRequest' } 
-            });
-            if (!res.ok) return;
-            const data = await res.json();
-            if (data.total_participants !== undefined && data.total_participants !== lastParticipantCount) {
-              location.reload();
+            const res = await fetch("{% url 'session_status' session.hash %}", {headers: {'X-Requested-With': 'XMLHttpRequest'}});
+            if (res.ok) {
+              const data = await res.json();
+              if (data.total_participants !== undefined && data.total_participants !== lastCount) location.reload();
             }
-          } catch (e) {
-            // ignore
-          }
-        }, 2000); // Kontrolovat každé 2 sekundy
+          } catch (e) {}
+        }, 2000);
       })();
     </script>
-    <div class="card pad" style="margin-bottom:20px;">
-      <h3 style="margin-top:0;font-size:clamp(18px, 3vw, 22px);">Účastníci</h3>
-      <ul style="list-style:none;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;">
+    
+    <div class="card pad lobby-section">
+      <h3 class="lobby-section-title">Účastníci</h3>
+      <ul class="participants-grid">
         {% for p in session.participants.all %}
-          <li style="padding:8px 12px;background:#f0f0f0;border-radius:6px;text-align:center;">{{ p.display_name }}</li>
+          <li class="participant-item">{{ p.display_name }}</li>
         {% empty %}
-          <li style="padding:8px 12px;color:var(--muted);">Zatím nikdo</li>
+          <li class="participant-item participant-item-empty">Zatím nikdo</li>
         {% endfor %}
       </ul>
     </div>
-    <div class="card pad" style="margin-bottom:20px;">
-      <h3 style="margin-top:0;font-size:clamp(18px, 3vw, 22px);">Otázky</h3>
-      <ol style="padding-left:20px;">
+    
+    <div class="card pad lobby-section">
+      <h3 class="lobby-section-title">Otázky</h3>
+      <ol class="questions-list">
         {% for qrun in session.question_runs.all %}
-          <li style="margin:12px 0;padding:8px;background:#f9f9f9;border-radius:6px;">
-            <span style="font-size:clamp(14px, 2.5vw, 16px);">{{ qrun.question.text }}</span>
+          <li class="question-item">
+            <span class="question-text">{{ qrun.question.text }}</span>
             {% if not qrun.starts_at %}
-              <a href="{% url 'session_start_question' session.hash qrun.order %}" class="btn primary" style="margin-left:12px;padding:6px 12px;font-size:14px;">Spustit</a>
+              <a href="{% url 'session_start_question' session.hash qrun.order %}" class="btn primary question-start-btn">Spustit</a>
             {% else %}
-              <span style="margin-left:12px;color:#4CAF50;font-weight:bold;">✓ spuštěno</span>
+              <span class="question-status">✓ spuštěno</span>
             {% endif %}
           </li>
         {% endfor %}
       </ol>
     </div>
+    
     <p>
-      <a href="{% url 'session_finish' session.hash %}" class="btn" style="background:#f44336;color:white;border-color:#f44336;padding:12px 24px;display:inline-block;">Ukončit sezení</a>
+      <a href="{% url 'session_finish' session.hash %}" class="btn btn-danger">Ukončit sezení</a>
     </p>
   {% else %}
-    {# Student view #}
     <p>Přihlášen jako: <strong>{{ participant.display_name }}</strong></p>
-    <div class="card pad" style="margin-top: 20px; background: #e8f5e9; border-left:4px solid #4CAF50;">
-      <p style="margin:0 0 8px 0;font-size:clamp(14px, 2.5vw, 16px);">Úspěšně jste se připojili!</p>
-      <p style="margin:0 0 8px 0;font-size:clamp(14px, 2.5vw, 16px);">Jakmile učitel spustí otázku, budete automaticky přesměrováni.</p>
-      <p style="margin:0;font-size:clamp(13px, 2vw, 14px);"><em>Pokud ještě žádná neběží, uvidíte tuto lobby.</em></p>
+    <div class="card pad success-message">
+      <p>Úspěšně jste se připojili!</p>
+      <p>Jakmile učitel spustí otázku, budete automaticky přesměrováni.</p>
+      <p><em>Pokud ještě žádná neběží, uvidíte tuto lobby.</em></p>
     </div>
+    
     <script>
-      function initSocketIO() {
+      (function() {
         const hash = "{{ session.hash }}";
+        const statusUrl = "{% url 'session_status' session.hash %}";
+        const resultsUrl = "{% url 'session_results' session.hash %}";
         
-        if (typeof io === 'undefined') {
-          setTimeout(initSocketIO, 100);
-          return;
+        function createFallback() {
+          return setInterval(async () => {
+            try {
+              const res = await fetch(statusUrl, {headers: {'X-Requested-With': 'XMLHttpRequest'}});
+              if (res.ok) {
+                const data = await res.json();
+                if (data.state === 'finished') {
+                  clearInterval(this);
+                  window.location.href = resultsUrl;
+                } else if (data.state === 'question' && data.order !== undefined) {
+                  clearInterval(this);
+                  window.location.href = "/session/" + hash + "/q/" + data.order + "/";
+                }
+              }
+            } catch (e) {}
+          }, 2000);
         }
         
-        const socket = io('http://localhost:8001', {
-          transports: ['websocket', 'polling'],
-          reconnection: true,
-          reconnectionDelay: 1000,
-          reconnectionAttempts: 5
-        });
-        
-        socket.on('connect', function() {
-          socket.emit('join_session', {hash: hash});
-        });
-        
-        socket.on('session_state', function(data) {
-          if (data.state === 'finished') {
-            window.location.href = "{% url 'session_results' session.hash %}";
+        function initSocketIO() {
+          if (typeof io === 'undefined') {
+            setTimeout(initSocketIO, 100);
             return;
           }
-          if (data.state === 'question') {
-            if (data.order !== undefined && data.order !== null) {
-              window.location.href = "/session/" + hash + "/q/" + data.order + "/";
-            }
-            return;
-          }
-        });
-        
-        socket.on('disconnect', function() {
-          const fallback = setInterval(async function() {
-            try {
-              const res = await fetch("{% url 'session_status' session.hash %}", { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
-              if (!res.ok) return;
-              const data = await res.json();
-              if (data.state === 'finished') {
-                clearInterval(fallback);
-                window.location.href = "{% url 'session_results' session.hash %}";
-              } else if (data.state === 'question') {
-                clearInterval(fallback);
-                window.location.href = "/session/" + hash + "/q/" + data.order + "/";
-              }
-            } catch (e) { 
-              // ignore
-            }
-          }, 2000);
-        });
-      }
-      
-      // Spustit po načtení stránky
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initSocketIO);
-      } else {
-        // Stránka už je načtená
-        initSocketIO();
-      }
+          const socket = io('http://localhost:8001', {transports: ['websocket', 'polling'], reconnection: true, reconnectionDelay: 1000, reconnectionAttempts: 5});
+          socket.on('connect', () => socket.emit('join_session', {hash: hash}));
+          socket.on('disconnect', createFallback);
+          socket.on('session_state', (data) => {
+            if (data.state === 'finished') window.location.href = resultsUrl;
+            else if (data.state === 'question' && data.order !== undefined) window.location.href = "/session/" + hash + "/q/" + data.order + "/";
+          });
+        }
+        (document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', initSocketIO) : initSocketIO());
+      })();
     </script>
-    <div class="card pad" style="margin-top:20px;">
-      <h3 style="margin-top:0;font-size:clamp(18px, 3vw, 22px);">Další účastníci</h3>
-      <ul style="list-style:none;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;">
+    
+    <div class="card pad lobby-section lobby-section-margin">
+      <h3 class="lobby-section-title">Další účastníci</h3>
+      <ul class="participants-grid">
         {% for p in session.participants.all %}
-          <li style="padding:8px 12px;background:{% if p.id == participant.id %}#e3f2fd{% else %}#f0f0f0{% endif %};border-radius:6px;text-align:center;font-size:clamp(14px, 2.5vw, 16px);">
+          <li class="participant-item {% if p.id == participant.id %}current{% endif %} participant-item-small">
             {{ p.display_name }}{% if p.id == participant.id %} <strong>(vy)</strong>{% endif %}
           </li>
         {% empty %}
-          <li style="padding:8px 12px;color:var(--muted);">Zatím jste sami</li>
+          <li class="participant-item participant-item-empty">Zatím jste sami</li>
         {% endfor %}
       </ul>
     </div>
   {% endif %}
 </div>
 {% endblock %}
-

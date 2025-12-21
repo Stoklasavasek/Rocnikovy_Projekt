@@ -7,7 +7,6 @@ from wagtail.admin import urls as wagtailadmin_urls
 from wagtail.documents import urls as wagtaildocs_urls
 from wagtail import urls as wagtail_urls
 
-from search import views as search_views
 from quiz import views as quiz_views
 
 urlpatterns = [
@@ -16,14 +15,11 @@ urlpatterns = [
     path("admin/", include(wagtailadmin_urls)),
     path("documents/", include(wagtaildocs_urls)),
     path("accounts/", include("allauth.urls")),
-    path("search/", search_views.search, name="search"),
     path("quiz/", quiz_views.quiz_list, name="quiz_list"),
     path("quiz/<int:quiz_id>/start/", quiz_views.quiz_start, name="quiz_start"),
     path("quiz/join/", quiz_views.join_quiz_by_code, name="quiz_join"),
     path("quiz/create/", quiz_views.quiz_create, name="quiz_create"),
     path("quiz/<int:quiz_id>/edit/", quiz_views.quiz_update, name="quiz_update"),
-    path("quiz/<int:quiz_id>/questions/", quiz_views.quiz_questions, name="quiz_questions"),
-    path("quiz/question/<int:question_id>/answers/", quiz_views.question_answers, name="question_answers"),
     path("quiz/<int:quiz_id>/delete/", quiz_views.quiz_delete, name="quiz_delete"),
     path("quiz/<int:quiz_id>/session/create/", quiz_views.session_create, name="session_create"),
     path("session/<str:hash>/", quiz_views.session_lobby, name="session_lobby"),

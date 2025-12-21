@@ -1,72 +1,46 @@
 {% extends "base.html" %}
 {% block content %}
-<div style="max-width:800px;margin:24px auto;padding:0 16px;">
+<div class="results-container">
   <h1>Výsledky: {{ session.quiz.title }} ({{ session.code }})</h1>
   {% if is_host %}
-    <p style="margin-bottom:16px;">
+    <p class="results-csv-link">
       <a href="{% url 'session_results_csv' session.hash %}" class="btn ghost">Stáhnout CSV</a>
     </p>
+  {% endif %}
 
-    {% if leaderboard %}
-      {# Pódium 1.–3. místo #}
-      <div style="display:flex;gap:16px;justify-content:center;align-items:flex-end;margin-bottom:32px;flex-wrap:wrap;">
-        {% with first=leaderboard.0 second=leaderboard.1 third=leaderboard.2 %}
-          {% if second %}
-          <div style="flex:1;min-width:160px;max-width:220px;text-align:center;padding:16px;background:linear-gradient(135deg,#e5e7eb 0%,#d1d5db 100%);border-radius:16px;box-shadow:var(--shadow);">
-            <div style="font-size:18px;font-weight:700;color:#4b5563;">2. místo</div>
-            <div style="font-size:20px;font-weight:700;margin-top:8px;">{{ second.participant.display_name }}</div>
-            <div style="margin-top:4px;font-size:16px;color:#111;">{{ second.score }} bodů</div>
-          </div>
-          {% endif %}
+  {% if leaderboard %}
+    <div class="podium-container">
+      {% if leaderboard.1 %}<div class="podium-place second"><div class="podium-rank second">2. místo</div><div class="podium-name second">{{ leaderboard.1.participant.display_name }}</div><div class="podium-score">{{ leaderboard.1.score }} bodů</div></div>{% endif %}
+      {% if leaderboard.0 %}<div class="podium-place first"><div class="podium-rank first">1. místo</div><div class="podium-name first">{{ leaderboard.0.participant.display_name }}</div><div class="podium-score first">{{ leaderboard.0.score }} bodů</div></div>{% endif %}
+      {% if leaderboard.2 %}<div class="podium-place third"><div class="podium-rank third">3. místo</div><div class="podium-name third">{{ leaderboard.2.participant.display_name }}</div><div class="podium-score">{{ leaderboard.2.score }} bodů</div></div>{% endif %}
+    </div>
 
-          {% if first %}
-          <div style="flex:1.2;min-width:180px;max-width:260px;text-align:center;padding:20px;background:linear-gradient(135deg,#facc15 0%,#f97316 100%);border-radius:20px;box-shadow:var(--shadow-lg);transform:translateY(-8px);">
-            <div style="font-size:20px;font-weight:800;color:#78350f;">1. místo</div>
-            <div style="font-size:24px;font-weight:800;margin-top:8px;color:#111;">{{ first.participant.display_name }}</div>
-            <div style="margin-top:6px;font-size:18px;font-weight:700;color:#111;">{{ first.score }} bodů</div>
-          </div>
-          {% endif %}
-
-          {% if third %}
-          <div style="flex:1;min-width:160px;max-width:220px;text-align:center;padding:16px;background:linear-gradient(135deg,#e5e7eb 0%,#d1d5db 100%);border-radius:16px;box-shadow:var(--shadow);">
-            <div style="font-size:18px;font-weight:700;color:#4b5563;">3. místo</div>
-            <div style="font-size:20px;font-weight:700;margin-top:8px;">{{ third.participant.display_name }}</div>
-            <div style="margin-top:4px;font-size:16px;color:#111;">{{ third.score }} bodů</div>
-          </div>
-          {% endif %}
-        {% endwith %}
-      </div>
-
-      {# Kompletní žebříček #}
-      <div style="margin-top:16px;">
-        <h2 style="font-size:22px;margin-bottom:12px;">Celkový žebříček</h2>
-        <table class="results-table">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Účastník</th>
-              <th>Skóre</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for item in leaderboard %}
-            <tr{% if forloop.counter0 == 0 %} class="correct-answer-row"{% endif %}>
-              <td>{{ forloop.counter }}.</td>
-              <td>{{ item.participant.display_name }}</td>
-              <td>{{ item.score }}</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    {% else %}
-      <p>Žádní účastníci.</p>
-    {% endif %}
+    <div class="leaderboard-section">
+      <h2 class="leaderboard-title">Celkový žebříček</h2>
+      <table class="results-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Účastník</th>
+            <th>Skóre</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in leaderboard %}
+          <tr{% if forloop.counter0 == 0 %} class="correct-answer-row"{% endif %}>
+            <td>{{ forloop.counter }}.</td>
+            <td>{{ item.participant.display_name }}</td>
+            <td>{{ item.score }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
   {% else %}
-    <div style="margin-top: 16px; padding: 16px; background: #f7f7f7; border-radius: 8px;">
+    <div class="empty-results">
       <strong>Konec kvízu.</strong>
+      <p>Žádní účastníci.</p>
     </div>
   {% endif %}
 </div>
 {% endblock %}
-

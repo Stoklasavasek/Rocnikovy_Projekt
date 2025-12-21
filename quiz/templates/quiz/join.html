@@ -4,13 +4,13 @@
 {% block body_class %}template-quiz-join{% endblock %}
 
 {% block content %}
-<div class="container" style="max-width:480px;">
-  <h1 style="font-size:clamp(24px, 4vw, 32px);margin-bottom:24px;text-align:center;">Připojit se ke kvízu</h1>
+<div class="container join-container">
+  <h1 class="join-title">Připojit se ke kvízu</h1>
   {% if messages %}
-  <div class="card pad" style="margin-bottom:20px;background:#fff3cd;border-left:4px solid #ffc107;">
-    <ul style="list-style:none;padding:0;margin:0;">
+  <div class="card pad message-box">
+    <ul>
       {% for message in messages %}
-        <li style="margin:4px 0;font-size:clamp(14px, 2.5vw, 16px);">{{ message }}</li>
+        <li>{{ message }}</li>
       {% endfor %}
     </ul>
   </div>
@@ -18,12 +18,10 @@
   <div class="card pad">
     <form method="post">
       {% csrf_token %}
-      <label for="code" style="display:block;margin-bottom:8px;font-weight:bold;font-size:clamp(14px, 2.5vw, 16px);">Kód kvízu</label>
-      <input id="code" name="code" type="text" style="display:block;width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:8px;margin-bottom:16px;font-size:clamp(16px, 3vw, 18px);text-align:center;letter-spacing:2px;" placeholder="Zadejte kód" autofocus>
-      <button type="submit" class="btn primary" style="width:100%;padding:14px;font-size:16px;font-weight:bold;">Připojit se</button>
+      <label for="code" class="code-input-label">Kód kvízu</label>
+      <input id="code" name="code" type="text" class="code-input" placeholder="Zadejte kód" autofocus>
+      <button type="submit" class="btn primary submit-btn-full-width">Připojit se</button>
     </form>
   </div>
 </div>
 {% endblock %}
-
-

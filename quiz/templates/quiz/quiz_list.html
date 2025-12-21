@@ -4,65 +4,64 @@
 {% block body_class %}template-quiz-list{% endblock %}
 
 {% block content %}
-<div class="container" style="max-width:900px;">
-  <h1 style="font-size:clamp(24px, 4vw, 32px);margin-bottom:16px;">Moje kvízy</h1>
-  <div style="margin-bottom:20px;display:flex;gap:12px;flex-wrap:wrap;">
+<div class="container quiz-list-container">
+  <h1 class="quiz-list-header">Moje kvízy</h1>
+  <div class="quiz-list-actions">
     <a href="{% url 'quiz_create' %}" class="btn primary">Vytvořit kvíz</a>
-  {% if is_teacher %}
-    <a href="/admin/" class="btn">Spravovat v administraci</a>
-  {% endif %}
+    {% if is_teacher %}
+      <a href="/admin/" class="btn">Spravovat v administraci</a>
+    {% endif %}
   </div>
 
-  <div class="card" style="overflow-x:auto;">
-    <table style="width:100%;border-collapse:collapse;">
-    <thead>
-      <tr>
-          <th style="text-align:left;border-bottom:1px solid #ddd;padding:8px;font-size:clamp(14px, 2.5vw, 16px);">Název</th>
-          <th style="text-align:left;border-bottom:1px solid #ddd;padding:8px;font-size:clamp(14px, 2.5vw, 16px);">Kód</th>
-          <th style="text-align:left;border-bottom:1px solid #ddd;padding:8px;font-size:clamp(14px, 2.5vw, 16px);">Akce</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for quiz in quizzes %}
-      <tr>
-          <td style="border-bottom:1px solid #f0f0f0;padding:8px;font-size:clamp(14px, 2.5vw, 16px);">{{ quiz.title }}</td>
-          <td style="border-bottom:1px solid #f0f0f0;padding:8px;font-size:clamp(14px, 2.5vw, 16px);"><strong>{{ quiz.join_code }}</strong></td>
-        <td style="border-bottom:1px solid #f0f0f0;padding:8px;">
-            <div style="display:flex;gap:8px;flex-wrap:wrap;">
-              <a href="{% url 'session_create' quiz.id %}" style="font-size:clamp(12px, 2vw, 14px);">Start live</a>
-              <a href="{% url 'quiz_start' quiz.id %}" style="font-size:clamp(12px, 2vw, 14px);">Spustit</a>
-              <a href="{% url 'quiz_update' quiz.id %}" style="font-size:clamp(12px, 2vw, 14px);">Upravit</a>
-              <a href="{% url 'quiz_delete' quiz.id %}" style="font-size:clamp(12px, 2vw, 14px);color:#f44336;">Smazat</a>
+  <div class="card card-overflow">
+    <table class="quiz-table">
+      <thead>
+        <tr>
+          <th>Název</th>
+          <th>Kód</th>
+          <th>Akce</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for quiz in quizzes %}
+        <tr>
+          <td>{{ quiz.title }}</td>
+          <td><strong>{{ quiz.join_code }}</strong></td>
+          <td>
+            <div class="quiz-actions">
+              <a href="{% url 'session_create' quiz.id %}">Start live</a>
+              <a href="{% url 'quiz_start' quiz.id %}">Spustit</a>
+              <a href="{% url 'quiz_update' quiz.id %}">Upravit</a>
+              <a href="{% url 'quiz_delete' quiz.id %}" class="delete">Smazat</a>
             </div>
-        </td>
-      </tr>
-      {% empty %}
-      <tr>
-          <td colspan="3" style="padding:16px;text-align:center;color:var(--muted);">Zatím žádné kvízy.</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="3" class="quiz-table-empty">Zatím žádné kvízy.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 </div>
-</div>
-<div class="container" style="max-width:900px;margin-top:32px;">
-  <h2 style="font-size:clamp(20px, 3.5vw, 26px);margin-bottom:16px;">Aktivní sezení</h2>
+
+<div class="container quiz-list-container quiz-list-container-margin">
+  <h2 class="quiz-list-subtitle">Aktivní sezení</h2>
   <div class="card pad">
-    <ul style="list-style:none;padding:0;">
-    {% for s in active_sessions %}
-        <li style="padding:12px;margin:8px 0;background:#f9f9f9;border-radius:6px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
-          <span style="font-size:clamp(14px, 2.5vw, 16px);">Kód: <strong>{{ s.code }}</strong></span>
-          <div style="display:flex;gap:12px;">
-            <a href="{% url 'session_lobby' s.hash %}" class="btn" style="padding:6px 12px;font-size:14px;">Lobby</a>
-            <a href="{% url 'session_results' s.hash %}" class="btn" style="padding:6px 12px;font-size:14px;">Výsledky</a>
+    <ul class="active-sessions-list">
+      {% for s in active_sessions %}
+        <li class="session-item">
+          <span>Kód: <strong>{{ s.code }}</strong></span>
+          <div class="session-item-actions">
+            <a href="{% url 'session_lobby' s.hash %}" class="btn">Lobby</a>
+            <a href="{% url 'session_results' s.hash %}" class="btn">Výsledky</a>
           </div>
-      </li>
-    {% empty %}
-        <li style="padding:12px;color:var(--muted);text-align:center;">Žádná aktivní sezení.</li>
-    {% endfor %}
-  </ul>
+        </li>
+      {% empty %}
+        <li class="session-item session-item-empty">Žádná aktivní sezení.</li>
+      {% endfor %}
+    </ul>
   </div>
 </div>
 {% endblock %}
-
-

@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container quiz-container">
+  <h1 class="quiz-title">{{ quiz.title }}</h1>
+  
+  <form method="post">
+    {% csrf_token %}
+    {% for question in questions %}
+      <div class="card pad question-card">
+        <h3 class="question-header">Otázka {{ forloop.counter }}: {{ question.text }}</h3>
+        
+        {% if question.image %}
+          <div class="question-image">
+            <img src="{{ question.image.url }}" alt="Obrázek k otázce">
+          </div>
+        {% endif %}
+        
+        <ul class="answer-list">
+          {% for answer in question.answers.all %}
+            <li>
+              <label class="answer-label">
+                <input type="radio" name="question_{{ question.id }}" value="{{ answer.id }}" required>
+                <span>{{ answer.text }}</span>
+              </label>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+    {% endfor %}
+    
+    <div class="submit-section">
+      <button type="submit" class="btn primary btn-large">
+        Odeslat odpovědi
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
