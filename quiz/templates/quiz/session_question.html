@@ -118,7 +118,7 @@
           <li data-answer-id="{{ answer.id }}" class="answer-item {% if answer.is_correct %}correct{% else %}wrong{% endif %}">
             <div class="stats-item-wrapper">
               <div class="stats-item-text">
-                <strong>{% if answer.is_correct %}✓{% endif %} {{ answer.text }}</strong>
+                <strong>{% if answer.is_correct %}✓{% else %}✗{% endif %} {{ answer.text }}</strong>
               </div>
               <div class="stats-number {% if answer.is_correct %}correct{% else %}wrong{% endif %}" data-answer-id="{{ answer.id }}">
                 {% if stats %}{{ stats.count }}{% else %}0{% endif %}
@@ -164,13 +164,13 @@
             <tbody>
               {% for p in participants %}
               {% with resp=participant_responses|get_item:p.id %}
-              <tr class="table-data-row {% if all_answered or time_over %}{% if resp and resp.is_correct %}correct-answer-row{% endif %}{% endif %}">
+              <tr class="table-data-row {% if all_answered or time_over %}{% if resp and resp.is_correct %}correct-answer-row{% elif resp and not resp.is_correct %}wrong-answer-row{% endif %}{% endif %}">
                 <td class="table-cell">{{ p.display_name }}</td>
                 <td class="table-cell">{% if resp %}{{ resp.answer.text }}{% else %}Neodpověděl{% endif %}</td>
                 <td class="table-cell">
                   {% if resp %}
                     {% if all_answered or time_over %}
-                      {% if resp.is_correct %}Správně ✓{% else %}Špatně{% endif %}
+                      {% if resp.is_correct %}Správně ✓{% else %}Špatně ✗{% endif %}
                     {% else %}
                       Odpověděl
                     {% endif %}
