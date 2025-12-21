@@ -42,11 +42,11 @@
             <nav>
                 {% if request.user.is_authenticated %}
                     <span>{{ request.user.get_full_name|default:request.user.username }}</span>
-                    <a href="{% url 'quiz_list' %}">Kvízy</a>
-                    <a href="{% url 'quiz_join' %}">Připojit se k kvízu</a>
+                    <a href="{% url 'quiz_list' %}" class="btn">Kvízy</a>
+                    <a href="{% url 'quiz_join' %}" class="btn">Připojit se k kvízu</a>
                     <a href="{% url 'account_logout' %}" class="btn">Odhlásit</a>
                 {% else %}
-                    <a href="{% url 'account_login' %}">Přihlášení</a>
+                    <a href="{% url 'account_login' %}" class="btn">Přihlášení</a>
                     <a href="{% url 'account_signup' %}" class="btn primary">Registrace</a>
                 {% endif %}
             </nav>
