@@ -377,9 +377,28 @@ def session_question_view(request, hash, order):
     
     has_answered = False
     participant = None
+    current_response = None
+    current_points = 0
+    total_points = 0
+    
     if not is_host and request.user.is_authenticated:
         participant, _ = _get_or_create_participant(session, request.user)
         has_answered = qrun.responses.filter(participant=participant).exists()
+        
+        # Získání aktuální odpovědi a bodů
+        if has_answered:
+            current_response = qrun.responses.filter(participant=participant).first()
+            if current_response:
+                current_points = current_response.calculate_points()
+        
+        # Výpočet celkových bodů za všechny dokončené otázky (včetně aktuální, pokud už odpověděl)
+        completed_responses = Response.objects.filter(
+            question_run__session=session,
+            question_run__order__lte=order,
+            participant=participant
+        )
+        for resp in completed_responses:
+            total_points += resp.calculate_points()
     
     answer_stats, participant_responses, correct_responses, wrong_responses, no_answer_responses = (
         _get_question_stats(qrun) if is_host else ({}, {}, [], [], [])
@@ -399,6 +418,9 @@ def session_question_view(request, hash, order):
         "has_answered": has_answered,
         "answer_stats": answer_stats,
         "participants": session.participants.all(),
+        "current_response": current_response,
+        "current_points": current_points,
+        "total_points": total_points,
         "participant_responses": participant_responses,
         "correct_responses": correct_responses,
         "wrong_responses": wrong_responses,
@@ -471,8 +493,10 @@ def session_results(request, hash):
     """Finální výsledky sezení."""
     session = get_object_or_404(QuizSession, hash=hash)
     scores = {}
-    for resp in Response.objects.filter(question_run__session=session, is_correct=True).select_related("participant"):
-        scores[resp.participant_id] = scores.get(resp.participant_id, 0) + 1
+    # Počítáme body podle rychlosti odpovědi
+    for resp in Response.objects.filter(question_run__session=session).select_related("participant"):
+        points = resp.calculate_points()
+        scores[resp.participant_id] = scores.get(resp.participant_id, 0) + points
     
     leaderboard = sorted(
         [{"participant": p, "score": scores.get(p.id, 0)} for p in session.participants.all()],

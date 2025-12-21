@@ -157,6 +157,34 @@ class Response(models.Model):
     answered_at = models.DateTimeField(default=timezone.now)
     response_ms = models.PositiveIntegerField(default=0)
 
+    def calculate_points(self):
+        """
+        Vypočítá body na základě rychlosti a správnosti odpovědi.
+        
+        Vzorec:
+        - Špatná odpověď: 0 bodů
+        - Správná odpověď:
+          - 0-2 sekundy: 900-1000 bodů
+          - 2-15 sekund: 400-900 bodů
+          - 15+ sekund: 400 bodů (minimálně)
+        """
+        if not self.is_correct:
+            return 0
+        
+        response_seconds = self.response_ms / 1000.0
+        
+        if response_seconds <= 2:
+            # 0-2 sekundy: 900-1000 bodů (lineární pokles)
+            points = 1000 - (response_seconds / 2.0) * 100
+        elif response_seconds <= 15:
+            # 2-15 sekund: 400-900 bodů (lineární pokles)
+            points = 900 - ((response_seconds - 2) / 13.0) * 500
+        else:
+            # 15+ sekund: 400 bodů (minimálně)
+            points = 400
+        
+        return max(0, int(points))
+    
     def save(self, *args, **kwargs):
         """
         Při uložení vždy dopočítá:

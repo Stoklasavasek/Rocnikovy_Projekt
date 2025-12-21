@@ -209,6 +209,23 @@
       <div class="status-message info">
         <p>Odpověď přijata. Čekejte, než odpoví ostatní studenti nebo učitel spustí další otázku.</p>
       </div>
+      {% if current_response %}
+        <div class="points-display">
+          <div class="points-current">
+            <div class="points-label">Body za tuto otázku:</div>
+            <div class="points-value">{{ current_points }}</div>
+            {% if current_response.is_correct %}
+              <div class="points-status points-correct">✓ Správně</div>
+            {% else %}
+              <div class="points-status points-wrong">✗ Špatně (0 bodů)</div>
+            {% endif %}
+          </div>
+          <div class="points-total">
+            <div class="points-label">Celkové body:</div>
+            <div class="points-value-large">{{ total_points }}</div>
+          </div>
+        </div>
+      {% endif %}
     {% elif time_over %}
       <div class="status-message error">
         <p>Čas na odpověď vypršel. Neodpověděli jste. Čekejte, než učitel spustí další otázku.</p>
