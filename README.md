@@ -95,7 +95,6 @@ V aplikaci jsou tři základní typy uživatelů:
 
 Role učitele je určena funkcí v `quiz/roles.py`:
 - `user_is_teacher(user)` – rozpozná učitele (skupina Teacher / staff).
-- `teacher_required` – dekorátor pro ochranu učitelských view.
 
 ---
 
