@@ -3,6 +3,16 @@
 Webová aplikace pro interaktivní kvízy ve stylu Kahoot pro školy.  
 Učitel vytváří kvízy, otázky a odpovědi, studenti se připojují kódem a odpovídají v reálném čase. Výsledky vidí jak studenti, tak učitel (průběžné i finální hodnocení).
 
+### Hlavní funkce
+
+- **Živé kvízy** – učitel spouští kvíz v reálném čase, studenti se připojují pomocí kódu
+- **Bodování podle rychlosti** – rychlejší správné odpovědi získávají více bodů (1000-400 bodů)
+- **Žolíky** – studenti mohou použít žolíky (0-3 za hru), které smažou 2 špatné odpovědi
+- **Nastavitelný čas** – učitel může nastavit čas na odpověď pro každou otázku (5-300 sekund)
+- **Průběžný žebříček** – učitel vidí průběžné pořadí účastníků během kvízu
+- **Real-time aktualizace** – statistiky a výsledky se aktualizují v reálném čase pomocí Socket.IO
+- **Export výsledků** – učitel může stáhnout výsledky do CSV
+
 ### Použité technologie
 - **Backend**: Django 4.2
 - **CMS**: Wagtail 7
@@ -103,13 +113,18 @@ Role učitele je určena funkcí v `quiz/roles.py`:
 - `kahootapp/` – projekt, globální šablony, nastavení (dev/production).
 - `quiz/` – hlavní logika kvízů (modely, view, šablony, Socket.IO integrace).
 - `home/` – Wagtail stránka (úvodní/welcome screen).
-- `search/` – jednoduché vyhledávání.
 - `static/`, `kahootapp/static/`, `home/static/` – CSS, JS a obrázky.
 - `media/` – nahrané soubory (obrázky otázek, diagram modelů apod.).
 
 Hlavní modely jsou v `quiz/models.py`:
-- `Quiz`, `Question`, `Answer`, `StudentAnswer`
-- `QuizSession`, `Participant`, `QuestionRun`, `Response`
+- `Quiz` – kvíz s nastavitelným počtem žolíků (`jokers_count`)
+- `Question` – otázka s nastavitelným časem na odpověď (`duration_seconds`)
+- `Answer` – odpověď s příznakem správnosti
+- `StudentAnswer` – odpovědi studentů v jednoduchém režimu
+- `QuizSession` – živé sezení s unikátním kódem a hashem
+- `Participant` – účastník sezení s počtem použitých žolíků
+- `QuestionRun` – běh konkrétní otázky v sezení
+- `Response` – odpověď účastníka s výpočtem bodů podle rychlosti (`calculate_points()`)
 
 ---
 
@@ -143,3 +158,29 @@ Výsledný obrázek najdeš jako `media/quiz_models.png`.
   `docker-compose exec web python manage.py migrate`
 - Vytvoření admin účtu:  
   `docker-compose exec web python manage.py createsuperuser`
+- Zobrazení logů:  
+  `docker-compose logs -f web`
+
+---
+
+### Bodování
+
+Body se počítají podle rychlosti a správnosti odpovědi:
+- **Špatná odpověď**: 0 bodů
+- **Správná odpověď**:
+  - 0-2 sekundy: 900-1000 bodů (lineární pokles)
+  - 2-15 sekund: 400-900 bodů (lineární pokles)
+  - 15+ sekund: 400 bodů (minimálně)
+
+Výpočet probíhá v metodě `Response.calculate_points()` v `quiz/models.py`.
+
+---
+
+### Žolíky
+
+Každý kvíz může mít nastavený počet žolíků (0-3 za celou hru). Žolík:
+- Smaže 2 náhodné špatné odpovědi
+- S 50% pravděpodobností (pokud je sudý počet odpovědí >= 4) zobrazí pouze polovinu možností
+- Jinak zobrazí všechny odpovědi kromě 2 smazaných špatných
+
+Žolíky lze použít pouze během běžící otázky, před odpovědí.
