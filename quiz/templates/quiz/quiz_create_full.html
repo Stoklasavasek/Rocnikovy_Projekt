@@ -18,6 +18,12 @@
              class="quiz-title-input"
              value="{{ quiz_title }}">
     </div>
+    
+    <div class="quiz-title-input-wrapper">
+      <label for="jokers_count" class="quiz-title-label">Počet žolíků za celou hru:</label>
+      <input type="number" id="jokers_count" name="jokers_count" min="0" max="3" value="{{ jokers_count|default:0 }}" required>
+      <p style="font-size: 14px; color: #666; margin-top: 4px;">Počet žolíků, které může každý student použít během celého kvízu (0-3).</p>
+    </div>
 
     <div id="questions-container"></div>
     

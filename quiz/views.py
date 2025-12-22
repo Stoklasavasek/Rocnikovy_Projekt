@@ -10,6 +10,7 @@ Sem patří:
 
 import csv
 import json
+import random
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -201,16 +202,21 @@ def quiz_create(request):
             messages.error(request, "Název kvízu je povinný.")
             return render(request, "quiz/quiz_create_full.html", {
                 "quiz_title": "",
+                "jokers_count": 0,
                 "is_teacher": user_is_teacher(request.user)
             })
         
-        quiz = Quiz.objects.create(title=quiz_title, created_by=request.user)
+        jokers_count = int(request.POST.get("jokers_count", 0) or 0)
+        jokers_count = max(0, min(3, jokers_count))  # Omezit na 0-3
+        
+        quiz = Quiz.objects.create(title=quiz_title, created_by=request.user, jokers_count=jokers_count)
         question_count = _process_quiz_questions(quiz, request)
         messages.success(request, f"Kvíz '{quiz.title}' byl vytvořen s {question_count} otázkami.") if question_count > 0 else messages.warning(request, "Kvíz byl vytvořen, ale nemá žádné otázky.")
         return redirect("quiz_list")
     
     return render(request, "quiz/quiz_create_full.html", {
         "quiz_title": "",
+        "jokers_count": 0,
         "is_teacher": user_is_teacher(request.user),
         "quiz": None
     })
@@ -227,7 +233,11 @@ def quiz_update(request, quiz_id):
             messages.error(request, "Název kvízu je povinný.")
             return redirect("quiz_update", quiz_id=quiz.id)
         
+        jokers_count = int(request.POST.get("jokers_count", 0) or 0)
+        jokers_count = max(0, min(3, jokers_count))  # Omezit na 0-3
+        
         quiz.title = quiz_title
+        quiz.jokers_count = jokers_count
         quiz.save()
         quiz.questions.all().delete()
         question_count = _process_quiz_questions(quiz, request)
@@ -242,6 +252,7 @@ def quiz_update(request, quiz_id):
     
     return render(request, "quiz/quiz_create_full.html", {
         "quiz_title": quiz.title,
+        "jokers_count": quiz.jokers_count,
         "is_teacher": user_is_teacher(request.user),
         "quiz": quiz,
         "questions_data": mark_safe(json.dumps(questions_data))
@@ -365,6 +376,62 @@ def session_submit_answer(request, hash, order):
 
 
 @login_required
+def session_use_joker(request, hash, order):
+    """Použití žolíku studentem během otázky."""
+    if request.method != "POST":
+        return JsonResponse({"error": "Pouze POST požadavek."}, status=405)
+    
+    session = get_object_or_404(QuizSession, hash=hash, is_active=True)
+    qrun = get_object_or_404(QuestionRun, session=session, order=order)
+    
+    if request.user == session.host:
+        return JsonResponse({"error": "Učitel nemůže používat žolíky."}, status=403)
+    
+    participant, _ = _get_or_create_participant(session, request.user)
+    
+    # Kontrola, zda může použít žolík
+    if qrun.starts_at is None or (qrun.ends_at and timezone.now() > qrun.ends_at):
+        return JsonResponse({"error": "Otázka neběží."}, status=400)
+    
+    if qrun.responses.filter(participant=participant).exists():
+        return JsonResponse({"error": "Už jsi odpověděl na tuto otázku."}, status=400)
+    
+    max_jokers = session.quiz.jokers_count
+    if participant.jokers_used >= max_jokers:
+        return JsonResponse({"error": "Už jsi použil všechny žolíky."}, status=400)
+    
+    # Získání odpovědí
+    all_answers = list(qrun.question.answers.all())
+    wrong_answers = [a for a in all_answers if not a.is_correct]
+    correct_answers = [a for a in all_answers if a.is_correct]
+    
+    # Smaže 2 špatné odpovědi (nebo všechny, pokud je jich méně)
+    removed_count = min(2, len(wrong_answers))
+    removed_answers = set(random.sample(wrong_answers, removed_count)) if removed_count > 0 else set()
+    
+    # 50% šance na polovinu možností (pokud je sudý počet odpovědí)
+    if random.random() < 0.5 and len(all_answers) >= 4 and len(all_answers) % 2 == 0:
+        target_count = len(all_answers) // 2
+        remaining_answers = correct_answers.copy()
+        available_wrong = [a for a in wrong_answers if a not in removed_answers]
+        if available_wrong:
+            needed = max(0, target_count - len(remaining_answers))
+            remaining_answers.extend(random.sample(available_wrong, min(needed, len(available_wrong))))
+    else:
+        remaining_answers = [a for a in all_answers if a not in removed_answers]
+    
+    # Označit žolík jako použitý
+    participant.jokers_used += 1
+    participant.save(update_fields=["jokers_used"])
+    
+    return JsonResponse({
+        "success": True,
+        "remaining_answers": [{"id": a.id, "text": a.text} for a in remaining_answers],
+        "jokers_remaining": max_jokers - participant.jokers_used
+    })
+
+
+@login_required
 def session_question_view(request, hash, order):
     """Zobrazení stránky otázky."""
     session = get_object_or_404(QuizSession, hash=hash, is_active=True)
@@ -381,9 +448,12 @@ def session_question_view(request, hash, order):
     current_points = 0
     total_points = 0
     
+    jokers_remaining = 0
     if not is_host and request.user.is_authenticated:
         participant, _ = _get_or_create_participant(session, request.user)
         has_answered = qrun.responses.filter(participant=participant).exists()
+        if participant:
+            jokers_remaining = max(0, session.quiz.jokers_count - participant.jokers_used)
         
         # Získání aktuální odpovědi a bodů
         if has_answered:
@@ -448,6 +518,7 @@ def session_question_view(request, hash, order):
         "wrong_responses": wrong_responses,
         "no_answer_responses": no_answer_responses,
         "participant_leaderboard": participant_leaderboard,
+        "jokers_remaining": jokers_remaining,
     })
 
 

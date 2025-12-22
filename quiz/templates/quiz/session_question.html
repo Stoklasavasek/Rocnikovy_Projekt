@@ -259,11 +259,18 @@
         <p>Čas na odpověď vypršel. Neodpověděli jste. Čekejte, než učitel spustí další otázku.</p>
       </div>
     {% else %}
+    {% if not is_host and question_started and not has_answered %}
+      {% if session.quiz.jokers_count > 0 and jokers_remaining > 0 %}
+        <button id="joker-btn" class="joker-button" title="Použít žolík (zbývá {{ jokers_remaining }})">
+          🃏 {{ jokers_remaining }}
+        </button>
+      {% endif %}
+    {% endif %}
     <form action="{% url 'session_submit_answer' session.hash qrun.order %}" method="post" class="answer-form" id="answer-form">
       {% csrf_token %}
-      <ul class="answer-list">
+      <ul class="answer-list" id="answer-list">
         {% for a in qrun.question.answers.all %}
-          <li>
+          <li data-answer-id="{{ a.id }}">
             <label class="answer-label">
               <input type="radio" name="answer_id" value="{{ a.id }}" required>
               <span>{{ a.text }}</span>
@@ -280,6 +287,66 @@
       document.getElementById('answer-form')?.addEventListener('submit', function() {
         if (window.stopTimerIfRunning) window.stopTimerIfRunning();
       });
+      
+      {% if not is_host and session.quiz.jokers_count > 0 and jokers_remaining > 0 and question_started and not has_answered %}
+      (() => {
+        const jokerBtn = document.getElementById('joker-btn');
+        const answerList = document.getElementById('answer-list');
+        if (!jokerBtn || !answerList) return;
+        
+        const jokerUrl = "{% url 'session_use_joker' session.hash qrun.order %}";
+        const totalAnswers = {{ qrun.question.answers.count }};
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+        
+        jokerBtn.addEventListener('click', async () => {
+          if (!confirm('Opravdu chceš použít žolík? Smaže se 2 špatné odpovědi a můžeš mít 50% šanci na polovinu možností.')) return;
+          
+          jokerBtn.disabled = true;
+          jokerBtn.textContent = '⏳';
+          
+          try {
+            const res = await fetch(jokerUrl, {
+              method: 'POST',
+              headers: {'X-CSRFToken': csrfToken, 'Content-Type': 'application/json'},
+              body: '{}'
+            });
+            const data = await res.json();
+            
+            if (data.success) {
+              answerList.innerHTML = data.remaining_answers.map(a => 
+                `<li data-answer-id="${a.id}">
+                  <label class="answer-label">
+                    <input type="radio" name="answer_id" value="${a.id}" required>
+                    <span>${a.text}</span>
+                  </label>
+                </li>`
+              ).join('');
+              
+              if (data.jokers_remaining > 0) {
+                jokerBtn.textContent = `🃏 ${data.jokers_remaining}`;
+                jokerBtn.title = `Použít žolík (zbývá ${data.jokers_remaining})`;
+                jokerBtn.disabled = false;
+              } else {
+                jokerBtn.remove();
+              }
+              
+              const msg = data.remaining_answers.length < totalAnswers 
+                ? `Zůstaly ti ${data.remaining_answers.length} možnosti.` 
+                : 'Smaženy 2 špatné odpovědi.';
+              alert(`Žolík použit! ${msg}`);
+            } else {
+              alert(`Chyba: ${data.error || 'Nepodařilo se použít žolík.'}`);
+              jokerBtn.disabled = false;
+              jokerBtn.textContent = '🃏 {{ jokers_remaining }}';
+            }
+          } catch (e) {
+            alert('Chyba při použití žolíku.');
+            jokerBtn.disabled = false;
+            jokerBtn.textContent = '🃏 {{ jokers_remaining }}';
+          }
+        });
+      })();
+      {% endif %}
     </script>
     {% endif %}
   {% endif %}

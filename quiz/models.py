@@ -24,6 +24,7 @@ class Quiz(models.Model):
     created_by = models.ForeignKey(User, on_delete=models.CASCADE)
     join_code = models.CharField(max_length=8, unique=True, blank=True)
     image = models.ImageField(upload_to="quiz_images/", null=True, blank=True)
+    jokers_count = models.PositiveIntegerField(default=0, help_text="Počet žolíků za celou hru (0-3)")
 
     def __str__(self):
         return self.title
@@ -120,6 +121,7 @@ class Participant(models.Model):
     user = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL)
     display_name = models.CharField(max_length=80)
     joined_at = models.DateTimeField(default=timezone.now)
+    jokers_used = models.PositiveIntegerField(default=0, help_text="Počet použitých žolíků")
 
     def __str__(self):
         return self.display_name

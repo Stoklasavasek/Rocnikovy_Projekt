@@ -28,6 +28,7 @@ urlpatterns = [
     path("session/<str:hash>/status/", quiz_views.session_status, name="session_status"),
     path("session/<str:hash>/q/<int:order>/", quiz_views.session_question_view, name="session_question_view"),
     path("session/<str:hash>/q/<int:order>/submit/", quiz_views.session_submit_answer, name="session_submit_answer"),
+    path("session/<str:hash>/q/<int:order>/joker/", quiz_views.session_use_joker, name="session_use_joker"),
     path("session/<str:hash>/finish/", quiz_views.session_finish, name="session_finish"),
     path("session/<str:hash>/results/", quiz_views.session_results, name="session_results"),
     path("session/<str:hash>/results.csv", quiz_views.session_results_csv, name="session_results_csv"),
