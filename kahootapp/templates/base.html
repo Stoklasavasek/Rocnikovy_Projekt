@@ -36,7 +36,10 @@
 
         <header>
             <div>
-                <a href="/">QuizIT!</a>
+                <a href="/" class="logo-link">
+                    {# Logo aplikace – stačí vložit soubor static/img/logo.png #}
+                    <img src="{% static 'img/logo.png' %}" alt="QuizIT! logo" class="logo-img">
+                </a>
             </div>
             <button class="mobile-menu-toggle" onclick="document.querySelector('header nav').classList.toggle('active')">☰</button>
             <nav>
