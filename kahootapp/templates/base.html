@@ -34,11 +34,10 @@
     <body class="{% block body_class %}{% endblock %}">
         {# {% wagtailuserbar %} #}
 
-        <header>
+        <header class="main-header">
             <div>
                 <a href="/" class="logo-link">
-                    {# Logo aplikace – stačí vložit soubor static/img/logo.png #}
-                    <img src="{% static 'img/logo.png' %}" alt="QuizIT! logo" class="logo-img">
+                    <img src="{% static 'img/logo.png' %}" alt="QuizIT!" class="logo-img">
                 </a>
             </div>
             <button class="mobile-menu-toggle" onclick="document.querySelector('header nav').classList.toggle('active')">☰</button>
@@ -55,9 +54,11 @@
             </nav>
         </header>
 
-        {% block content %}{% endblock %}
+        <main class="main-content">
+            {% block content %}{% endblock %}
+        </main>
 
-        <footer>
+        <footer class="main-footer">
             <p><strong>Václav Stoklasa</strong></p>
             <p>SSPU OPAVA</p>
             <p>Opava, 2025</p>
