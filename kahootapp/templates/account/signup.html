@@ -1,9 +1,12 @@
 {% extends "base.html" %}
 {% load socialaccount %}
+{# Šablona pro registraci nového uživatele #}
+
 {% block content %}
 <div class="container">
   <div class="card pad auth-container">
     <h2 class="auth-form-title">Registrace</h2>
+    {# Formulář pro registraci nového uživatele #}
     <form method="post" action="{% url 'account_signup' %}">
       {% csrf_token %}
       {{ form.non_field_errors }}
@@ -20,6 +23,7 @@
       </div>
     </form>
     <hr class="auth-divider">
+    {# Registrace pomocí Microsoft OAuth #}
     <div>
       <a class="btn" href="{% provider_login_url 'microsoft' method='oauth2' %}">Přihlásit se přes Microsoft</a>
     </div>

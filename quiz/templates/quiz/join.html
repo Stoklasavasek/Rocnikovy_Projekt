@@ -1,11 +1,13 @@
 {% extends "base.html" %}
 {% load static %}
+{# Šablona pro připojení ke kvízu pomocí kódu #}
 
 {% block body_class %}template-quiz-join{% endblock %}
 
 {% block content %}
 <div class="container join-container">
   <h1 class="join-title">Připojit se ke kvízu</h1>
+  {# Zobrazení chybových nebo informačních zpráv #}
   {% if messages %}
   <div class="card pad message-box">
     <ul>
@@ -15,6 +17,7 @@
     </ul>
   </div>
   {% endif %}
+  {# Formulář pro zadání kódu kvízu #}
   <div class="card pad">
     <form method="post">
       {% csrf_token %}

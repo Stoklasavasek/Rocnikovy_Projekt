@@ -1,12 +1,29 @@
+# Python virtuální prostředí
 .venv/
+
+# Python cache soubory
 __pycache__/
 *.pyc
+
+# SQLite databáze (v produkci se používá PostgreSQL)
 db.sqlite3
+
+# Nahrané soubory uživatelů (obrázky kvízů, otázek)
 media/
+
+# Log soubory
 *.log
+
+# Environment proměnné (obsahují citlivé údaje)
 .env
 *.env
+
+# Node.js závislosti (pokud by se používaly)
 node_modules/
+
+# Zkompilované statické soubory (generují se při collectstatic)
 static/
+
+# Data soubory
 data/
 

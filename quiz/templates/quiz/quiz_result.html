@@ -1,8 +1,11 @@
 {% extends "base.html" %}
+{# Šablona pro zobrazení výsledků jednoduchého kvízu (bez live sezení) #}
+
 {% block content %}
 <div class="container quiz-container">
   <h1 class="quiz-title">Výsledky: {{ quiz.title }}</h1>
   
+  {# Zobrazení skóre a procentuální úspěšnosti #}
   <div class="card pad result-card">
     <h2 class="result-score">
       Vaše skóre: {{ score }} / {{ total }}
@@ -12,6 +15,7 @@
     </p>
   </div>
   
+  {# Tlačítko pro návrat na seznam kvízů #}
   <div class="back-section">
     <a href="{% url 'quiz_list' %}" class="btn primary btn-large">
       Zpět na seznam kvízů

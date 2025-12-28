@@ -1,9 +1,12 @@
 {% extends "base.html" %}
+{# Šablona pro potvrzení odhlášení uživatele #}
+
 {% block content %}
 <div class="container">
   <div class="card pad auth-container">
     <h2 class="auth-form-title">Odhlášení</h2>
     <p>Opravdu se chceš odhlásit?</p>
+    {# Formulář pro odhlášení #}
     <form method="post" action="{% url 'account_logout' %}" class="auth-form-actions">
       {% csrf_token %}
       <button class="btn primary" type="submit">Odhlásit</button>

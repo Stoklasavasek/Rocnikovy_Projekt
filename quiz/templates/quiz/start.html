@@ -1,20 +1,25 @@
 {% extends "base.html" %}
+{# Šablona pro jednoduchý režim kvízu (bez live sezení) - student vyplní kvíz samostatně #}
+
 {% block content %}
 <div class="container quiz-container">
   <h1 class="quiz-title">{{ quiz.title }}</h1>
   
+  {# Formulář s otázkami a odpověďmi #}
   <form method="post">
     {% csrf_token %}
     {% for question in questions %}
       <div class="card pad question-card">
         <h3 class="question-header">Otázka {{ forloop.counter }}: {{ question.text }}</h3>
         
+        {# Zobrazení obrázku otázky, pokud existuje #}
         {% if question.image %}
           <div class="question-image">
             <img src="{{ question.image.url }}" alt="Obrázek k otázce">
           </div>
         {% endif %}
         
+        {# Seznam možných odpovědí (radio buttons) #}
         <ul class="answer-list">
           {% for answer in question.answers.all %}
             <li>
@@ -28,6 +33,7 @@
       </div>
     {% endfor %}
     
+    {# Tlačítko pro odeslání odpovědí #}
     <div class="submit-section">
       <button type="submit" class="btn primary btn-large">
         Odeslat odpovědi

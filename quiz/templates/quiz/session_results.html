@@ -1,7 +1,10 @@
 {% extends "base.html" %}
+{# Šablona pro finální výsledky živého sezení - zobrazuje podium a celkový žebříček #}
+
 {% block content %}
 <div class="results-container">
   <h1>Výsledky: {{ session.quiz.title }} ({{ session.code }})</h1>
+  {# Tlačítko pro stažení výsledků do CSV (pouze pro učitele) #}
   {% if is_host %}
     <p class="results-csv-link">
       <a href="{% url 'session_results_csv' session.hash %}" class="btn ghost">Stáhnout CSV</a>
@@ -9,12 +12,14 @@
   {% endif %}
 
   {% if leaderboard %}
+    {# Podium - zobrazení prvních 3 míst #}
     <div class="podium-container">
       {% if leaderboard.1 %}<div class="podium-place second"><div class="podium-rank second">2. místo</div><div class="podium-name second">{{ leaderboard.1.participant.display_name }}</div><div class="podium-score">{{ leaderboard.1.score }} bodů</div></div>{% endif %}
       {% if leaderboard.0 %}<div class="podium-place first"><div class="podium-rank first">1. místo</div><div class="podium-name first">{{ leaderboard.0.participant.display_name }}</div><div class="podium-score first">{{ leaderboard.0.score }} bodů</div></div>{% endif %}
       {% if leaderboard.2 %}<div class="podium-place third"><div class="podium-rank third">3. místo</div><div class="podium-name third">{{ leaderboard.2.participant.display_name }}</div><div class="podium-score">{{ leaderboard.2.score }} bodů</div></div>{% endif %}
     </div>
 
+    {# Celkový žebříček všech účastníků #}
     <div class="leaderboard-section">
       <h2 class="leaderboard-title">Celkový žebříček</h2>
       <table class="results-table">
@@ -37,6 +42,7 @@
       </table>
     </div>
   {% else %}
+    {# Zobrazení, pokud nejsou žádní účastníci #}
     <div class="empty-results">
       <strong>Konec kvízu.</strong>
       <p>Žádní účastníci.</p>

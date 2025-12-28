@@ -1,11 +1,13 @@
 {% extends "base.html" %}
 {% load static %}
+{# Šablona pro seznam kvízů a aktivních sezení #}
 
 {% block body_class %}template-quiz-list{% endblock %}
 
 {% block content %}
 <div class="container quiz-list-container">
   <h1 class="quiz-list-header">Moje kvízy</h1>
+  {# Akční tlačítka pro vytvoření kvízu a správu #}
   <div class="quiz-list-actions">
     <a href="{% url 'quiz_create' %}" class="btn primary">Vytvořit kvíz</a>
     {% if is_teacher %}
@@ -13,6 +15,7 @@
     {% endif %}
   </div>
 
+  {# Tabulka s kvízy uživatele #}
   <div class="card card-overflow">
     <table class="quiz-table">
       <thead>
@@ -46,6 +49,7 @@
   </div>
 </div>
 
+{# Sekce s aktivními sezeními #}
 <div class="container quiz-list-container quiz-list-container-margin">
   <h2 class="quiz-list-subtitle">Aktivní sezení</h2>
   <div class="card pad">

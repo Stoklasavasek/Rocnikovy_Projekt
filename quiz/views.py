@@ -429,6 +429,8 @@ def session_start_question(request, hash, order):
         pass
     
     send_session_status(session.hash)
+    # Odeslání počátečních statistik přes Socket.IO
+    send_answer_update(session.hash, qrun.order)
     
     remaining, time_over = _get_question_timing(qrun)
     total_participants, answered_count, all_answered = _get_participant_stats(session, qrun)
@@ -740,12 +742,26 @@ def session_status(request, hash):
             # Seřazení podle bodů (sestupně), pak podle jména
             leaderboard.sort(key=lambda x: (x["score"], x["name"]), reverse=True)
             
+            # Shromáždění odpovědí účastníků pro tabulku "Kdo jak odpověděl"
+            participant_responses_data = {}
+            for participant in session.participants.all():
+                response = current.responses.filter(participant=participant).first()
+                if response:
+                    participant_responses_data[str(participant.id)] = {
+                        'answer_text': response.answer.text,
+                        'is_correct': response.is_correct
+                    }
+            
+            remaining, time_over = _get_question_timing(current)
+            
             # Přidání detailních statistik do odpovědi
             response_data.update({
                 "answered_count": answered_count,
                 "total_participants": total_participants,
                 "all_answered": all_answered,
+                "time_over": time_over,
                 "answer_stats": answer_stats,
+                "participant_responses": participant_responses_data,
                 "correct_answer_ids": [str(a.id) for a in answers if a.is_correct],
                 "remaining": remaining,
                 "leaderboard": leaderboard

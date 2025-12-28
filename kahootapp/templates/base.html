@@ -32,32 +32,38 @@
     </head>
 
     <body class="{% block body_class %}{% endblock %}">
-        {# {% wagtailuserbar %} #}
-
+        {# Hlavička stránky s logem a navigací #}
         <header class="main-header">
             <div>
+                {# Logo aplikace - odkaz na úvodní stránku #}
                 <a href="/" class="logo-link">
                     <img src="{% static 'img/logo.png' %}" alt="QuizIT!" class="logo-img">
                 </a>
             </div>
+            {# Tlačítko pro mobilní menu (zobrazí se pouze na malých obrazovkách) #}
             <button class="mobile-menu-toggle" onclick="document.querySelector('header nav').classList.toggle('active')">☰</button>
+            {# Navigační menu - liší se pro přihlášené a nepřihlášené uživatele #}
             <nav>
                 {% if request.user.is_authenticated %}
+                    {# Zobrazení jména uživatele #}
                     <span>{{ request.user.get_full_name|default:request.user.username }}</span>
                     <a href="{% url 'quiz_list' %}" class="btn">Kvízy</a>
                     <a href="{% url 'quiz_join' %}" class="btn">Připojit se k kvízu</a>
                     <a href="{% url 'account_logout' %}" class="btn">Odhlásit</a>
                 {% else %}
+                    {# Menu pro nepřihlášené uživatele #}
                     <a href="{% url 'account_login' %}" class="btn">Přihlášení</a>
                     <a href="{% url 'account_signup' %}" class="btn primary">Registrace</a>
                 {% endif %}
             </nav>
         </header>
 
+        {# Hlavní obsah stránky - každá stránka zde vloží svůj obsah #}
         <main class="main-content">
             {% block content %}{% endblock %}
         </main>
 
+        {# Zápatí stránky s informacemi o autorovi #}
         <footer class="main-footer">
             <p><strong>Václav Stoklasa</strong></p>
             <p>SSPU OPAVA</p>
