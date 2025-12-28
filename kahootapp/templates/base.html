@@ -37,13 +37,14 @@
             <div>
                 {# Logo aplikace - odkaz na úvodní stránku #}
                 <a href="/" class="logo-link">
-                    <img src="{% static 'img/logo.png' %}" alt="QuizIT!" class="logo-img">
+                    <img src="{% static 'img/Transpa16.90.png' %}" alt="QuizIT!" class="logo-img">
                 </a>
             </div>
             {# Tlačítko pro mobilní menu (zobrazí se pouze na malých obrazovkách) #}
             <button class="mobile-menu-toggle" onclick="document.querySelector('header nav').classList.toggle('active')">☰</button>
             {# Navigační menu - liší se pro přihlášené a nepřihlášené uživatele #}
             <nav>
+                <button id="theme-toggle" class="btn" title="Přepnout motiv">🌙</button>
                 {% if request.user.is_authenticated %}
                     {# Zobrazení jména uživatele #}
                     <span>{{ request.user.get_full_name|default:request.user.username }}</span>
@@ -72,6 +73,26 @@
 
         {# Global javascript #}
         <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+        <script>
+        (function() {
+          let theme = localStorage.getItem('theme') || 'light';
+          const toggle = document.getElementById('theme-toggle');
+          const html = document.documentElement;
+          html.setAttribute('data-theme', theme);
+          if (toggle) {
+            const updateUI = () => {
+              toggle.textContent = theme === 'dark' ? '☀️' : '🌙';
+              html.setAttribute('data-theme', theme);
+              localStorage.setItem('theme', theme);
+            };
+            updateUI();
+            toggle.onclick = () => {
+              theme = theme === 'dark' ? 'light' : 'dark';
+              updateUI();
+            };
+          }
+        })();
+        </script>
 
         {% block extra_js %}
         {# Override this in templates to add extra javascript #}
