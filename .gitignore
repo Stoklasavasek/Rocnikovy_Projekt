@@ -22,8 +22,12 @@ media/
 node_modules/
 
 # Zkompilované statické soubory (generují se při collectstatic)
-static/
+# Ignorujeme jen kořenový static/, ne static/ v aplikacích
+/static/
 
 # Data soubory
 data/
+
+# macOS systémové soubory
+.DS_Store
 
