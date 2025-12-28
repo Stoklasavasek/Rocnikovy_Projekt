@@ -1,10 +1,18 @@
 {% extends "base.html" %}
+{# Šablona pro lobby živého sezení - zobrazuje kód pro připojení, účastníky a otázky #}
+
 {% block content %}
 <div class="container lobby-container">
   <h1 class="lobby-title">Lobby: {{ session.quiz.title }}</h1>
-  <p class="lobby-code">Kód pro připojení: <strong>{{ session.code }}</strong></p>
+  {# Velký a výrazný kód pro připojení - učitel ho sdílí se studenty #}
+  <div class="lobby-code">
+    <p>Kód pro připojení:</p>
+    <strong>{{ session.code }}</strong>
+  </div>
   
+  {# Sekce pro učitele (host) #}
   {% if is_host %}
+    {# JavaScript pro automatickou aktualizaci počtu účastníků (pro učitele) #}
     <script>
       (function() {
         let lastCount = {{ session.participants.count }};
@@ -20,6 +28,7 @@
       })();
     </script>
     
+    {# Seznam účastníků připojených k sezení #}
     <div class="card pad lobby-section">
       <h3 class="lobby-section-title">Účastníci</h3>
       <ul class="participants-grid">
@@ -31,6 +40,7 @@
       </ul>
     </div>
     
+    {# Seznam otázek v kvízu s možností spuštění #}
     <div class="card pad lobby-section">
       <h3 class="lobby-section-title">Otázky</h3>
       <ol class="questions-list">
@@ -47,10 +57,13 @@
       </ol>
     </div>
     
+    {# Tlačítko pro ukončení sezení #}
     <p>
       <a href="{% url 'session_finish' session.hash %}" class="btn btn-danger">Ukončit sezení</a>
     </p>
+  {# Sekce pro studenty #}
   {% else %}
+    {# Informace o přihlášeném studentovi #}
     <p>Přihlášen jako: <strong>{{ participant.display_name }}</strong></p>
     <div class="card pad success-message">
       <p>Úspěšně jste se připojili!</p>
@@ -58,12 +71,14 @@
       <p><em>Pokud ještě žádná neběží, uvidíte tuto lobby.</em></p>
     </div>
     
+    {# JavaScript pro real-time aktualizace pomocí Socket.IO s fallbackem na AJAX #}
     <script>
       (function() {
         const hash = "{{ session.hash }}";
         const statusUrl = "{% url 'session_status' session.hash %}";
         const resultsUrl = "{% url 'session_results' session.hash %}";
         
+        {# Fallback funkce pro AJAX polling (když Socket.IO není dostupné) #}
         function createFallback() {
           return setInterval(async () => {
             try {
@@ -82,6 +97,7 @@
           }, 2000);
         }
         
+        {# Inicializace Socket.IO pro real-time komunikaci #}
         function initSocketIO() {
           if (typeof io === 'undefined') {
             setTimeout(initSocketIO, 100);
@@ -99,6 +115,7 @@
       })();
     </script>
     
+    {# Seznam dalších účastníků (pro studenty) #}
     <div class="card pad lobby-section lobby-section-margin">
       <h3 class="lobby-section-title">Další účastníci</h3>
       <ul class="participants-grid">

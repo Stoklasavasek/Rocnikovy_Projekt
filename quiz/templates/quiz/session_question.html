@@ -188,13 +188,13 @@
                   <th>Stav</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody id="participants-responses-body">
                 {% for p in participants %}
                 {% with resp=participant_responses|get_item:p.id %}
-                <tr class="table-data-row {% if all_answered or time_over %}{% if resp and resp.is_correct %}correct-answer-row{% elif resp and not resp.is_correct %}wrong-answer-row{% endif %}{% endif %}">
+                <tr class="table-data-row participant-row" data-participant-id="{{ p.id }}" {% if all_answered or time_over %}{% if resp and resp.is_correct %}data-is-correct="true"{% elif resp and not resp.is_correct %}data-is-correct="false"{% endif %}{% endif %}>
                   <td class="table-cell">{{ p.display_name }}</td>
-                  <td class="table-cell">{% if resp %}{{ resp.answer.text }}{% else %}Neodpověděl{% endif %}</td>
-                  <td class="table-cell">
+                  <td class="table-cell participant-answer">{% if resp %}{{ resp.answer.text }}{% else %}Neodpověděl{% endif %}</td>
+                  <td class="table-cell participant-status">
                     {% if resp %}
                       {% if all_answered or time_over %}
                         {% if resp.is_correct %}Správně ✓{% else %}Špatně ✗{% endif %}
@@ -359,12 +359,24 @@
   let allAnswered = {{ all_answered|yesno:"true,false" }};
   let timeOver = {{ time_over|yesno:"true,false" }};
   const order = {{ qrun.order }};
+  const hash = "{{ session.hash }}";
   const statusUrl = "{% url 'session_status' session.hash %}";
   const resultsUrl = "{% url 'session_results' session.hash %}";
+  // Mapování answer_id -> is_correct pro aktualizaci statistik
+  const correctAnswers = {
+    {% for answer in qrun.question.answers.all %}
+    "{{ answer.id }}": {{ answer.is_correct|yesno:"true,false" }}{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  };
   
   function updateLeaderboard(leaderboard) {
     const tbody = document.getElementById('leaderboard-body');
-    if (!tbody || !leaderboard || leaderboard.length === 0) return;
+    if (!tbody) return;
+    
+    if (!leaderboard || leaderboard.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="3" class="table-cell">Žádní účastníci.</td></tr>';
+      return;
+    }
     
     tbody.innerHTML = '';
     leaderboard.forEach((item, index) => {
@@ -379,38 +391,175 @@
     });
   }
   
-  function updateStats() {
-    fetch(statusUrl).then(r => r.ok ? r.json() : null).then(d => {
-      if (d && d.state === 'question' && d.order === order) {
-        if (d.answered_count !== undefined && d.answered_count !== lastCount) {
-          lastCount = d.answered_count;
-          const countEl = document.getElementById('answered-count');
-          if (countEl) countEl.textContent = d.answered_count;
-          if (d.answer_stats) {
-            for (const aid in d.answer_stats) {
-              const statEl = document.querySelector('.stats-number[data-answer-id="' + aid + '"]');
-              if (statEl) statEl.textContent = d.answer_stats[aid];
-            }
+  function updateParticipantsResponses(participantResponses, allAnswered, timeOver) {
+    const tbody = document.getElementById('participants-responses-body');
+    if (!tbody || !participantResponses) return;
+    
+    tbody.querySelectorAll('.participant-row').forEach(row => {
+      const participantId = row.getAttribute('data-participant-id');
+      const resp = participantResponses[participantId] || participantResponses[String(participantId)];
+      const answerCell = row.querySelector('.participant-answer');
+      const statusCell = row.querySelector('.participant-status');
+      if (!answerCell || !statusCell) return;
+      
+      if (resp?.answer_text) {
+        answerCell.textContent = resp.answer_text;
+        const showResult = allAnswered || timeOver;
+        statusCell.textContent = showResult ? (resp.is_correct ? 'Správně ✓' : 'Špatně ✗') : 'Odpověděl';
+        row.className = 'table-data-row participant-row';
+        if (showResult) {
+          row.classList.add(resp.is_correct ? 'correct-answer-row' : 'wrong-answer-row');
+          row.setAttribute('data-is-correct', resp.is_correct.toString());
+        } else {
+          row.removeAttribute('data-is-correct');
+        }
+      } else {
+        answerCell.textContent = statusCell.textContent = 'Neodpověděl';
+        row.className = 'table-data-row participant-row';
+        row.removeAttribute('data-is-correct');
+      }
+    });
+  }
+  
+  function updateStatsFromData(data) {
+    const dataOrder = data.question_order ?? data.order;
+    if (!data || (dataOrder !== undefined && dataOrder !== order)) return;
+    
+    // Aktualizace počtu odpovědí
+    if (data.answered_count !== undefined) {
+      lastCount = data.answered_count;
+      const countEl = document.getElementById('answered-count');
+      if (countEl) countEl.textContent = data.answered_count;
+    }
+    
+    // Aktualizace statistik odpovědí
+    if (data.answer_stats) {
+      const showResult = data.all_answered || data.time_over;
+      for (const aid in data.answer_stats) {
+        const statEl = document.querySelector(`.stats-number[data-answer-id="${aid}"]`);
+        if (statEl) {
+          statEl.textContent = data.answer_stats[aid];
+          if (showResult && correctAnswers[aid] !== undefined) {
+            statEl.classList.remove('wrong', 'correct');
+            statEl.classList.add(correctAnswers[aid] ? 'correct' : 'wrong');
           }
         }
-        if (d.leaderboard) {
-          updateLeaderboard(d.leaderboard);
-        }
-        if (d.all_answered && !allAnswered) {
-          allAnswered = true;
-          setTimeout(() => location.reload(), 1000);
-        }
-        if (d.remaining !== undefined && d.remaining <= 0 && !timeOver) {
-          timeOver = true;
-          setTimeout(() => location.reload(), 500);
-        }
-      } else if (d.state === 'finished') {
-        window.location.href = resultsUrl;
       }
-    }).catch(() => {});
+    }
+    
+    // Aktualizace žebříčku a tabulky účastníků
+    if (data.leaderboard) updateLeaderboard(data.leaderboard);
+    if (data.participant_responses) {
+      updateParticipantsResponses(data.participant_responses, data.all_answered || false, data.time_over || false);
+    }
+    
+    // Aktualizace zobrazení po ukončení otázky
+    if (data.all_answered && !allAnswered) {
+      allAnswered = true;
+      const statsSection = document.querySelector('.stats-section.waiting');
+      if (statsSection) {
+        statsSection.classList.remove('waiting');
+        statsSection.querySelector('.waiting-message')?.remove();
+        const h4 = statsSection.querySelector('h4');
+        if (h4) h4.textContent = 'Výsledky podle odpovědí:';
+        statsSection.querySelectorAll('.answer-item').forEach(item => {
+          const answerId = item.getAttribute('data-answer-id');
+          const isCorrect = correctAnswers[answerId];
+          if (isCorrect !== undefined) {
+            item.classList.remove('waiting');
+            item.classList.add(isCorrect ? 'correct' : 'wrong');
+            const textEl = item.querySelector('.stats-item-text strong');
+            if (textEl) {
+              textEl.innerHTML = (isCorrect ? '✓' : '✗') + ' ' + textEl.textContent.replace(/^[✓✗]\s*/, '');
+            }
+          }
+        });
+      }
+      setTimeout(() => location.reload(), 1000);
+    }
+    
+    if (data.time_over && !timeOver) {
+      timeOver = true;
+      setTimeout(() => location.reload(), 500);
+    }
   }
-  updateStats();
-  setInterval(updateStats, 1000);
+  
+  // Fallback pro AJAX polling (když Socket.IO není dostupné)
+  function createFallback() {
+    return setInterval(async () => {
+      try {
+        const res = await fetch(statusUrl, {headers: {'X-Requested-With': 'XMLHttpRequest'}});
+        if (res.ok) {
+          const data = await res.json();
+          if (data.state === 'finished') {
+            clearInterval(this);
+            window.location.href = resultsUrl;
+          } else if (data.state === 'question' && data.order === order) {
+            updateStatsFromData(data);
+          }
+        }
+      } catch (e) {}
+    }, 1000);
+  }
+  
+  function startFallback() {
+    if (!fallbackInterval) fallbackInterval = createFallback();
+  }
+  
+  function stopFallback() {
+    if (fallbackInterval) {
+      clearInterval(fallbackInterval);
+      fallbackInterval = null;
+    }
+  }
+  
+  // Socket.IO setup
+  let socket = null;
+  let socketConnected = false;
+  let fallbackInterval = null;
+  
+  if (typeof io !== 'undefined') {
+    socket = io('http://localhost:8001', {
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionDelay: 500,
+      reconnectionAttempts: 10
+    });
+    
+    socket.on('connect', () => {
+      socketConnected = true;
+      socket.emit('join_session', {hash: hash});
+      stopFallback();
+    });
+    
+    socket.on('disconnect', () => {
+      socketConnected = false;
+      startFallback();
+    });
+    
+    socket.on('connect_error', startFallback);
+    
+    socket.on('session_state', (data) => {
+      if (data.state === 'finished') {
+        window.location.href = resultsUrl;
+      } else if (data.state === 'question' && data.order !== order) {
+        window.location.href = `/session/${hash}/q/${data.order}/`;
+      }
+    });
+    
+    socket.on('answer_update', (data) => {
+      if (data) {
+        const dataOrder = data.question_order ?? data.order;
+        if (dataOrder === order) updateStatsFromData(data);
+      }
+    });
+    
+    setTimeout(() => {
+      if (!socketConnected) startFallback();
+    }, 3000);
+  } else {
+    startFallback();
+  }
 })();
 </script>
 {% endif %}
