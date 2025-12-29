@@ -93,26 +93,39 @@ def _get_question_stats(qrun):
     - Seznam správných a špatných odpovědí
     - Seznam účastníků, kteří ještě neodpověděli
     
+    Používá select_related a prefetch_related pro optimalizaci dotazů.
+    
+    Args:
+        qrun: QuestionRun objekt pro který se počítají statistiky
+        
     Returns:
-        Seznam 5 hodnot:
-        - answer_stats: Slovník s počty odpovědí pro každou možnost
-        - participant_responses: Slovník s odpověďmi jednotlivých účastníků
-        - correct_responses: Seznam správných odpovědí
-        - wrong_responses: Seznam špatných odpovědí
-        - no_answer_responses: Seznam účastníků, kteří ještě neodpověděli
+        Tuple obsahující:
+        - answer_stats: Dict {answer_id: {'answer': Answer, 'count': int, 'is_correct': bool}}
+        - participant_responses: Dict {participant_id: response_data}
+        - correct_responses: List správných odpovědí
+        - wrong_responses: List špatných odpovědí
+        - no_answer_responses: List účastníků bez odpovědi
     """
     answer_stats = {}  # Slovník: answer_id -> {answer, count, is_correct}
     participant_responses = {}  # Slovník: participant_id -> response_data
     correct_responses = []  # Seznam správných odpovědí
     wrong_responses = []  # Seznam špatných odpovědí
     
-    # Počítání odpovědí pro každou možnost
-    for answer in qrun.question.answers.all():
-        count = qrun.responses.filter(answer=answer).count()
-        answer_stats[answer.id] = {'answer': answer, 'count': count, 'is_correct': answer.is_correct}
+    # Optimalizace: načtení všech odpovědí najednou s prefetch
+    answers = qrun.question.answers.all()
+    responses = qrun.responses.select_related('participant', 'answer').all()
+    
+    # Počítání odpovědí pro každou možnost (optimalizace pomocí annotate by bylo lepší, ale toto je čitelnější)
+    for answer in answers:
+        count = sum(1 for r in responses if r.answer_id == answer.id)
+        answer_stats[answer.id] = {
+            'answer': answer,
+            'count': count,
+            'is_correct': answer.is_correct
+        }
     
     # Shromáždění odpovědí účastníků
-    for response in qrun.responses.select_related('participant', 'answer').all():
+    for response in responses:
         response_data = {
             'participant': response.participant,
             'answer': response.answer,
@@ -123,9 +136,10 @@ def _get_question_stats(qrun):
         # Rozdělení na správné a špatné odpovědi
         (correct_responses if response.is_correct else wrong_responses).append(response_data)
     
-    # Najít účastníky, kteří ještě neodpověděli
+    # Najít účastníky, kteří ještě neodpověděli (optimalizace pomocí prefetch)
     responded_ids = set(participant_responses.keys())
-    no_answer_responses = [p for p in qrun.session.participants.all() if p.id not in responded_ids]
+    all_participants = list(qrun.session.participants.all())
+    no_answer_responses = [p for p in all_participants if p.id not in responded_ids]
     
     return answer_stats, participant_responses, correct_responses, wrong_responses, no_answer_responses
 
@@ -218,9 +232,27 @@ def landing(request):
 
 @login_required
 def quiz_list(request):
-    """Přehled kvízů aktuálního uživatele a aktivních sezení."""
-    quizzes = Quiz.objects.filter(created_by=request.user) if request.user.is_authenticated else Quiz.objects.none()
-    active_sessions = QuizSession.objects.filter(host=request.user, is_active=True)
+    """
+    Přehled kvízů aktuálního uživatele a aktivních sezení.
+    
+    Zobrazí:
+    - Všechny kvízy vytvořené aktuálním uživatelem
+    - Všechna aktivní sezení hostovaná aktuálním uživatelem
+    
+    Používá select_related pro optimalizaci dotazů na databázi.
+    """
+    quizzes = (
+        Quiz.objects.filter(created_by=request.user)
+        .select_related("created_by")
+        .order_by("-id")  # Nejnovější první
+        if request.user.is_authenticated 
+        else Quiz.objects.none()
+    )
+    active_sessions = (
+        QuizSession.objects.filter(host=request.user, is_active=True)
+        .select_related("quiz", "host")
+        .order_by("-started_at")  # Nejnovější první
+    )
     return render(request, "quiz/quiz_list.html", {
         "quizzes": quizzes,
         "active_sessions": active_sessions,
@@ -388,23 +420,75 @@ def quiz_delete(request, quiz_id):
 
 @login_required
 def session_create(request, quiz_id):
-    """Vytvoření nového živého sezení."""
-    quiz = get_object_or_404(Quiz, id=quiz_id, created_by=request.user)
+    """
+    Vytvoření nového živého sezení pro kvíz.
+    
+    Vytvoří QuizSession a pro každou otázku v kvízu vytvoří QuestionRun
+    s pořadím a časem na odpověď. Používá bulk_create pro optimalizaci.
+    
+    Args:
+        quiz_id: ID kvízu, pro který se vytváří sezení
+        
+    Returns:
+        Redirect na lobby sezení
+    """
+    quiz = get_object_or_404(Quiz.objects.select_related("created_by"), id=quiz_id, created_by=request.user)
+    
+    # Validace: kvíz musí mít otázky
+    if not quiz.questions.exists():
+        messages.error(request, "Kvíz nemá žádné otázky. Nejdříve přidejte otázky.")
+        return redirect("quiz_list")
+    
+    # Vytvoření sezení
     session = QuizSession.objects.create(quiz=quiz, host=request.user)
-    for index, q in enumerate(quiz.questions.all(), start=1):
-        # Vždy použij duration_seconds z Question (má default 20 v modelu)
-        # Načteme hodnotu přímo z databáze pomocí values() pro jistotu
-        duration = q.duration_seconds if hasattr(q, 'duration_seconds') else 20
-        QuestionRun.objects.create(session=session, question=q, order=index, duration_seconds=duration)
+    
+    # Vytvoření QuestionRun pro každou otázku (optimalizace pomocí bulk_create)
+    question_runs = []
+    for index, q in enumerate(quiz.questions.all().order_by("id"), start=1):
+        question_runs.append(
+            QuestionRun(
+                session=session,
+                question=q,
+                order=index,
+                duration_seconds=q.duration_seconds  # Použije hodnotu z Question modelu
+            )
+        )
+    QuestionRun.objects.bulk_create(question_runs)
+    
     return redirect("session_lobby", hash=session.hash)
 
 
 @login_required
 def session_lobby(request, hash):
-    """Lobby pro živé sezení."""
-    session = get_object_or_404(QuizSession, hash=hash, is_active=True)
+    """
+    Lobby pro živé sezení - čekárna před začátkem kvízu.
+    
+    Zobrazí:
+    - Informace o sezení (kód, kvíz)
+    - Seznam připojených účastníků
+    - Seznam otázek v kvízu
+    - Pro učitele: tlačítko pro spuštění první otázky
+    
+    Používá prefetch_related pro optimalizaci dotazů na účastníky a otázky.
+    
+    Args:
+        hash: Hash sezení pro identifikaci
+        
+    Returns:
+        Render lobby stránky
+    """
+    session = get_object_or_404(
+        QuizSession.objects.select_related("quiz", "host")
+        .prefetch_related("participants", "question_runs__question"),
+        hash=hash,
+        is_active=True
+    )
     is_host = session.host == request.user
-    participant, _ = _get_or_create_participant(session, request.user) if not is_host else (None, False)
+    
+    # Pro účastníky (ne učitele) vytvoří nebo načte Participant záznam
+    participant = None
+    if not is_host:
+        participant, _ = _get_or_create_participant(session, request.user)
     
     return render(request, "quiz/session_lobby.html", {
         "session": session,

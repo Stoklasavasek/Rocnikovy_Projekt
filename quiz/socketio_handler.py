@@ -1,23 +1,44 @@
-"""Socket.IO handler pro real-time komunikaci v kvízech."""
+"""
+Socket.IO handler pro real-time komunikaci v kvízech.
+
+Tento modul zajišťuje komunikaci mezi Django aplikací a samostatným Socket.IO serverem.
+Používá se pro odesílání real-time aktualizací (statistiky odpovědí, žebříček, stav sezení)
+všem připojeným klientům (učitel i studenti).
+
+Architektura:
+- Django aplikace (port 8000) volá funkce z tohoto modulu
+- Socket.IO server (port 8001) přijímá zprávy a broadcastuje je klientům
+- Klienti (prohlížeče) se připojují k Socket.IO serveru a přijímají aktualizace
+"""
 import socketio
 import threading
 import time
+from typing import Optional
 
 from django.db.models import Q
 from django.utils import timezone
 
 from .models import QuizSession, QuestionRun
 
-# Klient pro připojení k socket.io serveru
-socketio_client = None
-_client_lock = threading.Lock()
-SOCKETIO_URL = 'http://localhost:8001'
+# Globální Socket.IO klient pro připojení k serveru
+socketio_client: Optional[socketio.Client] = None
+_client_lock = threading.Lock()  # Zámek pro thread-safe přístup ke klientovi
+SOCKETIO_URL = 'http://localhost:8001'  # URL Socket.IO serveru
 
 
-def get_socketio_client():
+def get_socketio_client() -> Optional[socketio.Client]:
     """
-    Získat nebo vytvořit socket.io klienta.
-    Pokud klient není připojen, vytvoří nový.
+    Získat nebo vytvořit socket.io klienta (singleton pattern).
+    
+    Pokud klient neexistuje nebo není připojen, vytvoří nový a pokusí se připojit.
+    Používá thread-safe přístup pomocí zámku pro zajištění konzistence.
+    
+    Returns:
+        socketio.Client objekt nebo None, pokud se připojení nepovede
+        
+    Note:
+        Pokud se připojení nepovede, funkce tiše pokračuje (Socket.IO není kritické
+        pro fungování aplikace - používá se jako fallback AJAX polling).
     """
     global socketio_client
     with _client_lock:
@@ -26,9 +47,12 @@ def get_socketio_client():
             socketio_client = socketio.Client()
             try:
                 # Pokus o připojení k Socket.IO serveru
+                # wait_timeout=5: čeká max 5 sekund na připojení
+                # transports: podporuje polling i websocket
                 socketio_client.connect(SOCKETIO_URL, wait_timeout=5, transports=['polling', 'websocket'])
             except Exception:
                 # Pokud se připojení nepovede, pokračujeme bez chyby
+                # Aplikace může fungovat i bez Socket.IO (použije AJAX polling)
                 pass
         return socketio_client
 
@@ -73,35 +97,62 @@ def send_session_status(session_hash):
         pass
 
 
-def send_answer_update(session_hash, question_order):
+def send_answer_update(session_hash: str, question_order: int) -> None:
     """
     Odeslat aktualizaci odpovědí přes socket.io včetně průběžného žebříčku.
     
     Pošle aktuální statistiky odpovědí pro konkrétní otázku všem připojeným klientům.
     Učitel vidí průběžné statistiky v reálném čase včetně průběžného žebříčku účastníků.
+    
+    Obsahuje:
+    - Počty odpovědí pro každou možnost (answer_stats)
+    - Odpovědi jednotlivých účastníků (participant_responses)
+    - Průběžný žebříček účastníků (leaderboard)
+    - Zbývající čas na odpověď (remaining)
+    - Informace o tom, zda všichni odpověděli (all_answered)
+    
+    Args:
+        session_hash: Hash sezení pro identifikaci
+        question_order: Pořadí otázky v sezení
+        
+    Note:
+        Pokud Socket.IO není dostupný, funkce tiše pokračuje (fallback na AJAX).
     """
     try:
         client = get_socketio_client()
         if not client.connected:
             return
         
-        session = QuizSession.objects.get(hash=session_hash)
-        qrun = QuestionRun.objects.filter(session=session, order=question_order).first()
+        # Optimalizace: načtení sezení s prefetch pro účastníky
+        session = QuizSession.objects.prefetch_related("participants").get(hash=session_hash)
+        
+        # Načtení běhu otázky s optimalizací
+        qrun = (
+            QuestionRun.objects
+            .select_related("question")
+            .prefetch_related("question__answers", "responses__answer", "responses__participant")
+            .filter(session=session, order=question_order)
+            .first()
+        )
         if not qrun:
             return
         
-        # Počítání statistik odpovědí
-        answers = qrun.question.answers.all()
-        answer_stats = {str(a.id): qrun.responses.filter(answer=a).count() for a in answers}
+        # Počítání statistik odpovědí (optimalizace: načtení všech odpovědí najednou)
+        answers = list(qrun.question.answers.all())
+        responses = list(qrun.responses.all())
+        answer_stats = {str(a.id): sum(1 for r in responses if r.answer_id == a.id) for a in answers}
+        
+        # Statistiky účastníků
         total_participants = session.participants.count()
-        answered_count = qrun.responses.values("participant_id").distinct().count()
+        answered_count = len(set(r.participant_id for r in responses))
         all_answered = total_participants > 0 and answered_count >= total_participants
         
         # Shromáždění odpovědí účastníků pro tabulku "Kdo jak odpověděl"
-        # Musíme zahrnout všechny účastníky, i ty, kteří ještě neodpověděli
+        # Optimalizace: použití slovníku pro rychlejší vyhledávání
         participant_responses_data = {}
+        response_by_participant = {r.participant_id: r for r in responses}
         for participant in session.participants.all():
-            response = qrun.responses.filter(participant=participant).first()
+            response = response_by_participant.get(participant.id)
             if response:
                 participant_responses_data[str(participant.id)] = {
                     'answer_text': response.answer.text,
@@ -110,12 +161,13 @@ def send_answer_update(session_hash, question_order):
             # Účastník ještě neodpověděl - nezahrneme ho do slovníku (bude null v JS)
         
         # Výpočet průběžného žebříčku účastníků (body za všechny dokončené otázky)
+        # Optimalizace: jeden dotaz s select_related místo více dotazů
         from .models import Response
         participant_scores = {}
         for resp in Response.objects.filter(
             question_run__session=session,
             question_run__order__lte=question_order
-        ).select_related("participant"):
+        ).select_related("participant", "answer"):
             points = resp.calculate_points()
             participant_scores[resp.participant_id] = participant_scores.get(resp.participant_id, 0) + points
         

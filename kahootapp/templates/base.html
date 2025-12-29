@@ -44,7 +44,6 @@
             <button class="mobile-menu-toggle" onclick="document.querySelector('header nav').classList.toggle('active')">☰</button>
             {# Navigační menu - liší se pro přihlášené a nepřihlášené uživatele #}
             <nav>
-                <button id="theme-toggle" class="btn" title="Přepnout motiv">🌙</button>
                 {% if request.user.is_authenticated %}
                     {# Zobrazení jména uživatele #}
                     <span>{{ request.user.get_full_name|default:request.user.username }}</span>
@@ -70,6 +69,9 @@
             <p>SSPU OPAVA</p>
             <p>Opava, 2025</p>
         </footer>
+
+        {# Tlačítko pro přepínání tmavého/světlého režimu - fixní pozice #}
+        <button id="theme-toggle" class="theme-toggle-btn" title="Přepnout motiv">🌙</button>
 
         {# Global javascript #}
         <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>

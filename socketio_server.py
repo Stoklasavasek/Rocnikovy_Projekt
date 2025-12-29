@@ -1,6 +1,21 @@
-"""Samostatný Socket.IO server pro real-time komunikaci."""
+"""
+Samostatný Socket.IO server pro real-time komunikaci v kvízech.
+
+Tento server běží na portu 8001 a zajišťuje real-time komunikaci mezi:
+- Django aplikací (port 8000) - odesílá aktualizace
+- Klienty (prohlížeče) - přijímají aktualizace
+
+Architektura:
+1. Django aplikace volá funkce z quiz/socketio_handler.py
+2. Tyto funkce se připojí k tomuto serveru a odešlou zprávy
+3. Server broadcastuje zprávy všem klientům v příslušné "room" (session)
+4. Klienti přijímají zprávy a aktualizují UI v reálném čase
+
+Používá eventlet pro asynchronní zpracování a periodické aktualizace.
+"""
 import os
 import time
+from typing import Dict, Any, Optional
 
 import django
 import eventlet
@@ -10,27 +25,53 @@ from django.utils import timezone
 
 from quiz.models import QuizSession, QuestionRun, Response
 
+# Nastavení Django pro přístup k databázi
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "kahootapp.settings.dev")
 django.setup()
 
+# Vytvoření Socket.IO serveru s CORS povoleným pro všechny originy
+# async_mode="eventlet" umožňuje asynchronní zpracování
 sio = socketio.Server(cors_allowed_origins="*", async_mode="eventlet")
 app = socketio.WSGIApp(sio)
 
 
-def get_room_name(session_hash):
-    """Vrátí název room pro session."""
+def get_room_name(session_hash: str) -> str:
+    """
+    Vrátí název room (místnosti) pro session.
+    
+    Socket.IO používá "rooms" pro seskupení klientů - všichni klienti
+    v jedné room dostávají stejné zprávy. Každé sezení má svou vlastní room.
+    
+    Args:
+        session_hash: Hash sezení pro identifikaci
+        
+    Returns:
+        Název room ve formátu "session_{hash}"
+    """
     return f"session_{session_hash}"
 
 
-def get_current_question_run(session):
-    """Vrátí aktuálně běžící otázku v sezení."""
+def get_current_question_run(session: QuizSession) -> Optional[QuestionRun]:
+    """
+    Vrátí aktuálně běžící otázku v sezení.
+    
+    Otázka je považována za běžící, pokud:
+    - Má nastavený starts_at (byla spuštěna)
+    - Nemá ends_at NEBO ends_at je v budoucnosti (čas ještě nevypršel)
+    
+    Args:
+        session: QuizSession objekt
+        
+    Returns:
+        QuestionRun objekt nebo None, pokud žádná otázka neběží
+    """
     now = timezone.now()
     return (
         session.question_runs
-        .filter(starts_at__isnull=False)
-        .filter(Q(ends_at__isnull=True) | Q(ends_at__gt=now))
-        .order_by("order")
-        .last()
+        .filter(starts_at__isnull=False)  # Musí být spuštěna
+        .filter(Q(ends_at__isnull=True) | Q(ends_at__gt=now))  # Čas ještě nevypršel
+        .order_by("order")  # Seřazeno podle pořadí
+        .last()  # Vrátí poslední (nejnovější) běžící otázku
     )
 
 
@@ -162,27 +203,47 @@ def _calculate_leaderboard(session, question_order):
     return leaderboard
 
 
-def send_periodic_updates():
-    """Periodicky posílá aktualizace pro všechny aktivní otázky."""
+def send_periodic_updates() -> None:
+    """
+    Periodicky posílá aktualizace pro všechny aktivní otázky.
+    
+    Tato funkce běží v background threadu a každou sekundu:
+    1. Najde všechna aktivní sezení
+    2. Pro každé sezení najde aktuálně běžící otázku
+    3. Vypočítá statistiky a žebříček
+    4. Odešle aktualizace všem klientům v room
+    
+    Zajišťuje, že učitel vidí statistiky v reálném čase i bez nových odpovědí
+    (např. zbývající čas, průběžný žebříček).
+    
+    Note:
+        Používá eventlet.sleep(1) pro asynchronní čekání (neblokuje ostatní operace).
+        Při chybě tiše pokračuje, aby neohrozila běh serveru.
+    """
     while True:
         try:
             now = timezone.now()
-            for session in QuizSession.objects.filter(is_active=True):
+            # Optimalizace: načtení pouze aktivních sezení s prefetch
+            for session in QuizSession.objects.filter(is_active=True).prefetch_related("participants", "question_runs__question"):
                 qrun = get_current_question_run(session)
                 if not (qrun and qrun.starts_at):
-                    continue
+                    continue  # Žádná otázka neběží, přeskočit
                 
+                # Výpočet statistik pro aktuální otázku
                 answer_stats, total_participants, answered_count, all_answered, participant_responses_data = (
                     _calculate_question_stats(qrun, session)
                 )
+                # Výpočet průběžného žebříčku
                 leaderboard = _calculate_leaderboard(session, qrun.order)
                 
+                # Výpočet zbývajícího času
                 remaining = None
                 time_over = False
                 if qrun.ends_at:
                     remaining = max(0, int((qrun.ends_at - now).total_seconds())) if qrun.ends_at > now else 0
                     time_over = remaining == 0
                 
+                # Odeslání aktualizace všem klientům v room
                 sio.emit('answer_update', {
                     'question_order': qrun.order,
                     'answered_count': answered_count,
@@ -195,8 +256,10 @@ def send_periodic_updates():
                     'remaining': remaining
                 }, room=get_room_name(session.hash))
         except Exception:
+            # Při chybě tiše pokračujeme, aby neohrozila běh serveru
             pass
         
+        # Asynchronní čekání 1 sekundu (neblokuje ostatní operace)
         eventlet.sleep(1)
 
 
