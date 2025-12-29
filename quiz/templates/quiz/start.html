@@ -1,9 +1,55 @@
 {% extends "base.html" %}
+{% load wagtailcore_tags %}
 {# Šablona pro jednoduchý režim kvízu (bez live sezení) - student vyplní kvíz samostatně #}
+
+{% block extra_js %}
+<script>
+function toggleMaterial(index) {
+  const content = document.getElementById(`content-${index}`);
+  const toggle = document.getElementById(`toggle-${index}`);
+  if (content && toggle) {
+    const isHidden = content.style.display === 'none';
+    content.style.display = isHidden ? 'block' : 'none';
+    toggle.textContent = isHidden ? '▲' : '▼';
+  }
+}
+</script>
+{% endblock %}
 
 {% block content %}
 <div class="container quiz-container">
   <h1 class="quiz-title">{{ quiz.title }}</h1>
+  
+  {# Zobrazení vzdělávacích materiálů před kvízem #}
+  {% if educational_materials %}
+    <div class="educational-materials card pad my-4">
+      <h2>📚 Vzdělávací materiály</h2>
+      <p class="text-muted">Před začátkem kvízu si můžete prostudovat následující materiály:</p>
+      <ul class="material-list">
+        {% for material in educational_materials %}
+          <li class="material-item pad-sm bg-card rounded my-2">
+            <div class="material-header" onclick="toggleMaterial({{ forloop.counter0 }})">
+              <div>
+                <h3>{{ material.title }}</h3>
+                <p class="text-muted">
+                  Typ: {{ material.get_material_type_display }}
+                  {% if material.external_url %}
+                    | <a href="{{ material.external_url }}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation();">Externí odkaz ↗</a>
+                  {% endif %}
+                </p>
+              </div>
+              <span class="material-toggle" id="toggle-{{ forloop.counter0 }}">▼</span>
+            </div>
+            {% if material.content %}
+              <div class="material-content my-2" id="content-{{ forloop.counter0 }}">
+                {{ material.content|richtext }}
+              </div>
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endif %}
   
   {# Formulář s otázkami a odpověďmi #}
   <form method="post">

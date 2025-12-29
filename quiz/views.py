@@ -222,12 +222,44 @@ def _get_or_create_participant(session, user):
     )
 
 
+def _get_educational_materials(quiz_id, show_before=False, show_after=False):
+    """Načte vzdělávací materiály pro daný kvíz."""
+    try:
+        from home.models import EducationalMaterial
+        filters = {"related_quiz_id": quiz_id, "live": True}
+        if show_before:
+            filters["show_before_quiz"] = True
+        if show_after:
+            filters["show_after_quiz"] = True
+        return EducationalMaterial.objects.filter(**filters).order_by('title')
+    except Exception:
+        return []
+
+
 # ===== VIEW FUNKCE =====
 
 def landing(request):
-    """Úvodní obrazovka."""
+    """
+    Úvodní obrazovka s obsahem z Wagtail CMS.
+    
+    Načte HomePage z Wagtail a předá ji do šablony,
+    aby učitelé mohli editovat obsah přes Wagtail admin.
+    """
     is_teacher = user_is_teacher(request.user) if request.user.is_authenticated else False
-    return render(request, "landing.html", {"is_teacher": is_teacher})
+    
+    # Načtení HomePage z Wagtail (pokud existuje)
+    homepage = None
+    try:
+        from home.models import HomePage
+        homepage = HomePage.objects.filter(live=True).first()
+    except Exception:
+        # Pokud model není dostupný, pokračujeme bez něj
+        pass
+    
+    return render(request, "landing.html", {
+        "is_teacher": is_teacher,
+        "homepage": homepage
+    })
 
 
 @login_required
@@ -301,11 +333,26 @@ def quiz_start(request, quiz_id):
                 # Počítání správných odpovědí
                 if answer.is_correct:
                     score += 1
+        # Načtení vzdělávacích materiálů pro zobrazení po kvízu
+        educational_materials_after = _get_educational_materials(quiz_id, show_after=True)
+        
         # Zobrazení výsledků
-        return render(request, "quiz/quiz_result.html", {"quiz": quiz, "score": score, "total": questions.count()})
+        return render(request, "quiz/quiz_result.html", {
+            "quiz": quiz,
+            "score": score,
+            "total": questions.count(),
+            "educational_materials": educational_materials_after
+        })
+    
+    # Načtení souvisejících vzdělávacích materiálů (pokud existují)
+    educational_materials = _get_educational_materials(quiz_id, show_before=True)
     
     # Zobrazení formuláře s otázkami
-    return render(request, "quiz/start.html", {"quiz": quiz, "questions": questions})
+    return render(request, "quiz/start.html", {
+        "quiz": quiz,
+        "questions": questions,
+        "educational_materials": educational_materials
+    })
 
 
 @login_required
@@ -487,13 +534,16 @@ def session_lobby(request, hash):
     
     # Pro účastníky (ne učitele) vytvoří nebo načte Participant záznam
     participant = None
+    educational_materials_before = []
     if not is_host:
         participant, _ = _get_or_create_participant(session, request.user)
+        educational_materials_before = _get_educational_materials(session.quiz.id, show_before=True)
     
     return render(request, "quiz/session_lobby.html", {
         "session": session,
         "is_host": is_host,
-        "participant": participant
+        "participant": participant,
+        "educational_materials_before": educational_materials_before,
     })
 
 
@@ -731,6 +781,12 @@ def session_question_view(request, hash, order):
         # Seřadíme podle bodů (sestupně), pak podle jména pro konzistenci
         participant_leaderboard.sort(key=lambda x: (x["score"], x["participant"].display_name), reverse=True)
     
+    # Načtení vzdělávacích materiálů POUZE před otázkou (ne během kvízu)
+    # Poznámka: Materiály se zobrazují pouze když otázka ještě neběží, aby nerušily studenty během kvízu
+    educational_materials_before = []
+    if not is_host and not question_started:
+        educational_materials_before = _get_educational_materials(session.quiz.id, show_before=True)
+    
     return render(request, "quiz/session_question.html", {
         "session": session,
         "qrun": qrun,
@@ -754,6 +810,7 @@ def session_question_view(request, hash, order):
         "no_answer_responses": no_answer_responses,
         "participant_leaderboard": participant_leaderboard,
         "jokers_remaining": jokers_remaining,
+        "educational_materials_before": educational_materials_before,
     })
 
 
@@ -894,10 +951,15 @@ def session_results(request, hash):
         key=lambda x: x["score"], reverse=True
     )
     
+    # Načtení vzdělávacích materiálů pro zobrazení po kvízu (pouze pro studenty)
+    # Poznámka: Materiály se zobrazují pod žebříčkem na stránce s finálními výsledky
+    educational_materials_after = _get_educational_materials(session.quiz.id, show_after=True) if request.user != session.host else []
+    
     return render(request, "quiz/session_results.html", {
         "session": session,
         "leaderboard": leaderboard,
-        "is_host": request.user == session.host
+        "is_host": request.user == session.host,
+        "educational_materials_after": educational_materials_after,
     })
 
 

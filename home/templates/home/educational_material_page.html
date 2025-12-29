@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% load static wagtailcore_tags %}
+
+{% block body_class %}template-educational-material{% endblock %}
+
+{% block content %}
+<div class="container">
+  <article class="card pad">
+    {# Nadpis materiálu #}
+    <h1>{{ page.title }}</h1>
+    
+    {# Informace o materiálu #}
+    <div class="material-info pad-sm bg-card rounded my-4">
+      <p class="text-muted">
+        <strong>Typ:</strong> {{ page.get_material_type_display }}
+        {% if page.related_quiz %}
+          | <strong>Související kvíz:</strong> 
+          <a href="{% url 'quiz_start' quiz_id=page.related_quiz.id %}">{{ page.related_quiz.title }}</a>
+        {% endif %}
+      </p>
+    </div>
+    
+    {# Externí URL (pokud je zadán) #}
+    {% if page.external_url %}
+      <div class="external-link pad-sm bg-card rounded my-4">
+        <p><strong>Externí odkaz:</strong> <a href="{{ page.external_url }}" target="_blank" rel="noopener noreferrer">{{ page.external_url }}</a></p>
+      </div>
+    {% endif %}
+    
+    {# Obsah materiálu #}
+    {% if page.content %}
+      <div class="material-content my-4">
+        {{ page.content|richtext }}
+      </div>
+    {% endif %}
+    
+    {# Odkaz na související kvíz (pokud existuje) #}
+    {% if page.related_quiz %}
+      <div class="related-quiz pad-sm bg-card rounded my-4">
+        <h3>Související kvíz</h3>
+        <p><strong>{{ page.related_quiz.title }}</strong> (Kód: {{ page.related_quiz.join_code }})</p>
+        <a href="{% url 'quiz_start' quiz_id=page.related_quiz.id %}" class="btn primary">Spustit kvíz</a>
+      </div>
+    {% endif %}
+  </article>
+</div>
+{% endblock %}
+

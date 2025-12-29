@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load wagtailcore_tags %}
 {# Šablona pro lobby živého sezení - zobrazuje kód pro připojení, účastníky a otázky #}
 
 {% block content %}
@@ -115,6 +116,37 @@
       })();
     </script>
     
+    {# Vzdělávací materiály před začátkem kvízu (pro studenty) #}
+    {% if educational_materials_before %}
+      <div class="educational-materials card pad my-4">
+        <h2>📚 Vzdělávací materiály</h2>
+        <p class="text-muted">Před začátkem kvízu si můžete prostudovat následující materiály:</p>
+        <ul class="material-list">
+          {% for material in educational_materials_before %}
+            <li class="material-item pad-sm bg-card rounded my-2">
+              <div class="material-header" onclick="toggleMaterialLobby({{ forloop.counter0 }})">
+                <div>
+                  <h3><a href="{% pageurl material %}" onclick="event.stopPropagation();">{{ material.title }}</a></h3>
+                  <p class="text-muted">
+                    Typ: {{ material.get_material_type_display }}
+                    {% if material.external_url %}
+                      | <a href="{{ material.external_url }}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation();">Externí odkaz ↗</a>
+                    {% endif %}
+                  </p>
+                </div>
+                <span class="material-toggle" id="toggle-lobby-{{ forloop.counter0 }}">▼</span>
+              </div>
+              {% if material.content %}
+                <div class="material-content my-2" id="content-lobby-{{ forloop.counter0 }}">
+                  {{ material.content|richtext }}
+                </div>
+              {% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+    
     {# Seznam dalších účastníků (pro studenty) #}
     <div class="card pad lobby-section lobby-section-margin">
       <h3 class="lobby-section-title">Další účastníci</h3>
@@ -128,6 +160,23 @@
         {% endfor %}
       </ul>
     </div>
+  {% endif %}
+  
+  {% if not is_host and educational_materials_before %}
+  <script>
+  (function() {
+    function toggle(prefix, index) {
+      const content = document.getElementById(`content-${prefix}-${index}`);
+      const toggle = document.getElementById(`toggle-${prefix}-${index}`);
+      if (content && toggle) {
+        const isHidden = content.style.display === 'none';
+        content.style.display = isHidden ? 'block' : 'none';
+        toggle.textContent = isHidden ? '▲' : '▼';
+      }
+    }
+    window.toggleMaterialLobby = (index) => toggle('lobby', index);
+  })();
+  </script>
   {% endif %}
 </div>
 {% endblock %}

@@ -1,5 +1,20 @@
 {% extends "base.html" %}
+{% load wagtailcore_tags %}
 {# Šablona pro zobrazení výsledků jednoduchého kvízu (bez live sezení) #}
+
+{% block extra_js %}
+<script>
+function toggleMaterialAfter(index) {
+  const content = document.getElementById(`content-after-${index}`);
+  const toggle = document.getElementById(`toggle-after-${index}`);
+  if (content && toggle) {
+    const isHidden = content.style.display === 'none';
+    content.style.display = isHidden ? 'block' : 'none';
+    toggle.textContent = isHidden ? '▲' : '▼';
+  }
+}
+</script>
+{% endblock %}
 
 {% block content %}
 <div class="container quiz-container">
@@ -14,6 +29,37 @@
       {% widthratio score total 100 %}% správně
     </p>
   </div>
+  
+  {# Zobrazení vzdělávacích materiálů po kvízu #}
+  {% if educational_materials %}
+    <div class="educational-materials card pad my-4">
+      <h2>📚 Doporučené materiály k prostudování</h2>
+      <p class="text-muted">Pro lepší pochopení látky si můžete prostudovat následující materiály:</p>
+      <ul class="material-list">
+        {% for material in educational_materials %}
+          <li class="material-item pad-sm bg-card rounded my-2">
+            <div class="material-header" onclick="toggleMaterialAfter({{ forloop.counter0 }})">
+              <div>
+                <h3>{{ material.title }}</h3>
+                <p class="text-muted">
+                  Typ: {{ material.get_material_type_display }}
+                  {% if material.external_url %}
+                    | <a href="{{ material.external_url }}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation();">Externí odkaz ↗</a>
+                  {% endif %}
+                </p>
+              </div>
+              <span class="material-toggle" id="toggle-after-{{ forloop.counter0 }}">▼</span>
+            </div>
+            {% if material.content %}
+              <div class="material-content my-2" id="content-after-{{ forloop.counter0 }}">
+                {{ material.content|richtext }}
+              </div>
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endif %}
   
   {# Tlačítko pro návrat na seznam kvízů #}
   <div class="back-section">

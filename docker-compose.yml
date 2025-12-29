@@ -48,5 +48,9 @@ services:
       - ./kahootapp/templates:/app/kahootapp/templates
       - ./quiz/templates:/app/quiz/templates
       - ./home/templates:/app/home/templates
+      # Mountnutí Python souborů pro rychlý vývoj
+      - ./home:/app/home
+      - ./quiz:/app/quiz
+      - ./kahootapp:/app/kahootapp
     command: /app/docker-entrypoint.sh
 

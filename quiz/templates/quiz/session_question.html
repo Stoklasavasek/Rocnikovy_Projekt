@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load quiz_tags %}
+{% load wagtailcore_tags %}
 {% block content %}
 <div class="container quiz-container">
   <h1 class="quiz-title">{{ session.quiz.title }}</h1>
@@ -233,6 +234,38 @@
       <div class="status-message warning">
         <p><strong>⏸️ Otázka ještě neběží.</strong> Počkejte, až učitel spustí otázku.</p>
       </div>
+      
+      {# Vzdělávací materiály před otázkou #}
+      {# Poznámka: Zobrazují se pouze když otázka ještě neběží, ne během kvízu #}
+      {% if educational_materials_before %}
+        <div class="educational-materials card pad my-4">
+          <h2>📚 Vzdělávací materiály</h2>
+          <p class="text-muted">Před začátkem otázky si můžete prostudovat následující materiály:</p>
+          <ul class="material-list">
+            {% for material in educational_materials_before %}
+              <li class="material-item pad-sm bg-card rounded my-2">
+                <div class="material-header" onclick="toggleMaterialBefore({{ forloop.counter0 }})">
+                  <div>
+                    <h3><a href="{% pageurl material %}" onclick="event.stopPropagation();">{{ material.title }}</a></h3>
+                    <p class="text-muted">
+                      Typ: {{ material.get_material_type_display }}
+                      {% if material.external_url %}
+                        | <a href="{{ material.external_url }}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation();">Externí odkaz ↗</a>
+                      {% endif %}
+                    </p>
+                  </div>
+                  <span class="material-toggle" id="toggle-before-{{ forloop.counter0 }}">▼</span>
+                </div>
+                {% if material.content %}
+                  <div class="material-content my-2" id="content-before-{{ forloop.counter0 }}">
+                    {{ material.content|richtext }}
+                  </div>
+                {% endif %}
+              </li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% endif %}
     {% elif has_answered %}
       <div class="status-message info">
         <p>Odpověď přijata. Čekejte, než odpoví ostatní studenti nebo učitel spustí další otázku.</p>
@@ -560,6 +593,24 @@
   } else {
     startFallback();
   }
+})();
+</script>
+{% endif %}
+
+{% if educational_materials_before %}
+<script>
+// Poznámka: IIFE pattern pro izolaci scope a rozbalování/sbalování materiálů
+(function() {
+  function toggle(prefix, index) {
+    const content = document.getElementById(`content-${prefix}-${index}`);
+    const toggle = document.getElementById(`toggle-${prefix}-${index}`);
+    if (content && toggle) {
+      const isHidden = content.style.display === 'none';
+      content.style.display = isHidden ? 'block' : 'none';
+      toggle.textContent = isHidden ? '▲' : '▼';
+    }
+  }
+  window.toggleMaterialBefore = (index) => toggle('before', index);
 })();
 </script>
 {% endif %}

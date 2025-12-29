@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load wagtailcore_tags %}
 {# Šablona pro finální výsledky živého sezení - zobrazuje podium a celkový žebříček #}
 
 {% block content %}
@@ -41,6 +42,38 @@
         </tbody>
       </table>
     </div>
+    
+    {# Vzdělávací materiály po kvízu (pouze pro studenty) #}
+    {# Poznámka: Zobrazují se pod žebříčkem po skončení celého kvízu #}
+    {% if not is_host and educational_materials_after %}
+      <div class="educational-materials card pad my-4">
+        <h2>📚 Vzdělávací materiály</h2>
+        <p class="text-muted">Po skončení kvízu si můžete prostudovat následující materiály:</p>
+        <ul class="material-list">
+          {% for material in educational_materials_after %}
+            <li class="material-item pad-sm bg-card rounded my-2">
+              <div class="material-header" onclick="toggleMaterialAfter({{ forloop.counter0 }})">
+                <div>
+                  <h3><a href="{% pageurl material %}" onclick="event.stopPropagation();">{{ material.title }}</a></h3>
+                  <p class="text-muted">
+                    Typ: {{ material.get_material_type_display }}
+                    {% if material.external_url %}
+                      | <a href="{{ material.external_url }}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation();">Externí odkaz ↗</a>
+                    {% endif %}
+                  </p>
+                </div>
+                <span class="material-toggle" id="toggle-after-{{ forloop.counter0 }}">▼</span>
+              </div>
+              {% if material.content %}
+                <div class="material-content my-2" id="content-after-{{ forloop.counter0 }}">
+                  {{ material.content|richtext }}
+                </div>
+              {% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+    {% endif %}
   {% else %}
     {# Zobrazení, pokud nejsou žádní účastníci #}
     <div class="empty-results">
@@ -49,4 +82,22 @@
     </div>
   {% endif %}
 </div>
+
+{% if not is_host and educational_materials_after %}
+<script>
+// Poznámka: IIFE pattern pro izolaci scope a rozbalování/sbalování materiálů po kvízu
+(function() {
+  function toggle(prefix, index) {
+    const content = document.getElementById(`content-${prefix}-${index}`);
+    const toggle = document.getElementById(`toggle-${prefix}-${index}`);
+    if (content && toggle) {
+      const isHidden = content.style.display === 'none';
+      content.style.display = isHidden ? 'block' : 'none';
+      toggle.textContent = isHidden ? '▲' : '▼';
+    }
+  }
+  window.toggleMaterialAfter = (index) => toggle('after', index);
+})();
+</script>
+{% endif %}
 {% endblock %}
