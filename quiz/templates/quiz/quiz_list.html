@@ -9,8 +9,8 @@
   <h1 class="quiz-list-header">Moje kvízy</h1>
   {# Akční tlačítka pro vytvoření kvízu a správu #}
   <div class="quiz-list-actions">
-    <a href="{% url 'quiz_create' %}" class="btn primary">Vytvořit kvíz</a>
     {% if is_teacher %}
+      <a href="{% url 'quiz_create' %}" class="btn primary">Vytvořit kvíz</a>
       <a href="/admin/" class="btn">Spravovat v administraci</a>
     {% endif %}
   </div>

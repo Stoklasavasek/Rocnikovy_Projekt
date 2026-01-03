@@ -272,7 +272,10 @@ def quiz_list(request):
     - Všechna aktivní sezení hostovaná aktuálním uživatelem
     
     Používá select_related pro optimalizaci dotazů na databázi.
+    
+    Pokud uživatel není učitel a nemá žádné kvízy, přesměruje ho na landing page.
     """
+    is_teacher = user_is_teacher(request.user)
     quizzes = (
         Quiz.objects.filter(created_by=request.user)
         .select_related("created_by")
@@ -280,6 +283,12 @@ def quiz_list(request):
         if request.user.is_authenticated 
         else Quiz.objects.none()
     )
+    
+    # Pokud není učitel a nemá žádné kvízy, přesměrovat na landing page
+    if not is_teacher and not quizzes.exists():
+        messages.info(request, "Pouze učitelé mohou vytvářet kvízy. Připojte se ke kvízu pomocí kódu.")
+        return redirect("landing")
+    
     active_sessions = (
         QuizSession.objects.filter(host=request.user, is_active=True)
         .select_related("quiz", "host")
@@ -288,7 +297,7 @@ def quiz_list(request):
     return render(request, "quiz/quiz_list.html", {
         "quizzes": quizzes,
         "active_sessions": active_sessions,
-        "is_teacher": user_is_teacher(request.user)
+        "is_teacher": is_teacher
     })
 
 
@@ -390,7 +399,12 @@ def join_quiz_by_code(request):
 
 @login_required
 def quiz_create(request):
-    """Vytvoření nového kvízu v jednom formuláři."""
+    """Vytvoření nového kvízu v jednom formuláři (pouze učitelé)."""
+    # Kontrola, zda je uživatel učitel
+    if not user_is_teacher(request.user):
+        messages.error(request, "Pouze učitelé mohou vytvářet kvízy.")
+        return redirect("quiz_list")
+    
     if request.method == "POST":
         quiz_title = request.POST.get("quiz_title", "").strip()
         if not quiz_title:

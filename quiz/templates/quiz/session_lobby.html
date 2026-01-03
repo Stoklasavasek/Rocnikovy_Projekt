@@ -69,7 +69,6 @@
     <div class="card pad success-message">
       <p>Úspěšně jste se připojili!</p>
       <p>Jakmile učitel spustí otázku, budete automaticky přesměrováni.</p>
-      <p><em>Pokud ještě žádná neběží, uvidíte tuto lobby.</em></p>
     </div>
     
     {# JavaScript pro real-time aktualizace pomocí Socket.IO s fallbackem na AJAX #}
@@ -119,7 +118,7 @@
     {# Vzdělávací materiály před začátkem kvízu (pro studenty) #}
     {% if educational_materials_before %}
       <div class="educational-materials card pad my-4">
-        <h2>📚 Vzdělávací materiály</h2>
+        <h2>Vzdělávací materiály</h2>
         <p class="text-muted">Před začátkem kvízu si můžete prostudovat následující materiály:</p>
         <ul class="material-list">
           {% for material in educational_materials_before %}

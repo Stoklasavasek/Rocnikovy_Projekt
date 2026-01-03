@@ -1,4 +1,4 @@
-{% load static wagtailcore_tags wagtailuserbar socialaccount %}
+{% load static wagtailcore_tags wagtailuserbar socialaccount quiz_tags %}
 
 <!DOCTYPE html>
 <html lang="en">
@@ -47,7 +47,9 @@
                 {% if request.user.is_authenticated %}
                     {# Zobrazení jména uživatele #}
                     <span>{{ request.user.get_full_name|default:request.user.username }}</span>
-                    <a href="{% url 'quiz_list' %}" class="btn">Kvízy</a>
+                    {% if request.user|is_teacher %}
+                        <a href="{% url 'quiz_list' %}" class="btn">Kvízy</a>
+                    {% endif %}
                     <a href="{% url 'quiz_join' %}" class="btn">Připojit se k kvízu</a>
                     <a href="{% url 'account_logout' %}" class="btn">Odhlásit</a>
                 {% else %}
@@ -65,7 +67,6 @@
 
         {# Zápatí stránky s informacemi o autorovi #}
         <footer class="main-footer">
-            <p><strong>Václav Stoklasa</strong></p>
             <p>SSPU OPAVA</p>
             <p>Opava, 2025</p>
         </footer>
