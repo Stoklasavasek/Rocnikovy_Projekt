@@ -246,11 +246,15 @@
               <li class="material-item pad-sm bg-card rounded my-2">
                 <div class="material-header" onclick="toggleMaterialBefore({{ forloop.counter0 }})">
                   <div>
-                    <h3><a href="{% pageurl material %}" onclick="event.stopPropagation();">{{ material.title }}</a></h3>
+                    <h3><a href="{% pageurl material %}" onclick="event.stopPropagation(); window.open(this.href, '_blank'); return false;">{{ material.title }}</a></h3>
                     <p class="text-muted">
                       Typ: {{ material.get_material_type_display }}
-                      {% if material.external_url %}
-                        | <a href="{{ material.external_url }}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation();">Externí odkaz ↗</a>
+                      {% if material.video_file %}
+                        | <a href="{{ material.video_file.url }}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation(); window.open(this.href, '_blank'); return false;">Video soubor ↗</a>
+                      {% elif material.document_file %}
+                        | <a href="{{ material.document_file.url }}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation(); window.open(this.href, '_blank'); return false;">Dokument ↗</a>
+                      {% elif material.external_url %}
+                        | <a href="{{ material.external_url }}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation(); window.open(this.href, '_blank'); return false;">Externí odkaz ↗</a>
                       {% endif %}
                     </p>
                   </div>
@@ -259,6 +263,14 @@
                 {% if material.content %}
                   <div class="material-content my-2" id="content-before-{{ forloop.counter0 }}">
                     {{ material.content|richtext }}
+                  </div>
+                {% endif %}
+                {% if material.video_file %}
+                  <div class="material-content my-2" id="content-before-{{ forloop.counter0 }}">
+                    <video controls style="width: 100%; max-width: 800px;">
+                      <source src="{{ material.video_file.url }}" type="video/mp4">
+                      Váš prohlížeč nepodporuje video tag.
+                    </video>
                   </div>
                 {% endif %}
               </li>

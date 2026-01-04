@@ -5,6 +5,7 @@ from django.apps import apps
 from wagtail.models import Page
 from wagtail.fields import RichTextField
 from wagtail.admin.panels import FieldPanel, MultiFieldPanel
+from wagtail.documents.models import Document
 
 
 class HomePage(Page):
@@ -54,6 +55,24 @@ class EducationalMaterial(Page):
         help_text="URL pro externí materiál (video, dokument, atd.)",
         verbose_name="Externí URL"
     )
+    video_file = models.ForeignKey(
+        Document,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='educational_materials_video',
+        help_text="Nahrané video (pouze pro typ 'Video')",
+        verbose_name="Video soubor"
+    )
+    document_file = models.ForeignKey(
+        Document,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='educational_materials_document',
+        help_text="Nahraný dokument (pouze pro typ 'Dokument')",
+        verbose_name="Dokument soubor"
+    )
     show_before_quiz = models.BooleanField(
         default=True,
         help_text="Zobrazit materiál před kvízem",
@@ -70,6 +89,8 @@ class EducationalMaterial(Page):
         FieldPanel('material_type'),
         FieldPanel('content'),
         FieldPanel('external_url'),
+        FieldPanel('video_file'),
+        FieldPanel('document_file'),
         MultiFieldPanel([
             FieldPanel('show_before_quiz'),
             FieldPanel('show_after_quiz'),

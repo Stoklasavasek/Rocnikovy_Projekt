@@ -12,7 +12,8 @@ TEACHER_GROUP = "Teacher"
 
 # Wagtail importy
 try:
-    from wagtail.models import Page, GroupPagePermission
+    from wagtail.models import Page, GroupPagePermission, Collection
+    from wagtail.documents.models import Document
     WAGTAIL_AVAILABLE = True
 except ImportError as e:
     WAGTAIL_AVAILABLE = False
@@ -94,6 +95,63 @@ class Command(BaseCommand):
                         permission=publish_perm
                     )
             
+            # Oprávnění pro správu dokumentů (videa, PDF, atd.)
+            document_content_type = ContentType.objects.filter(
+                app_label='wagtaildocs',
+                model='document'
+            ).first()
+            
+            if document_content_type:
+                # Přidáme také view_document, aby se zobrazilo menu
+                document_perms = Permission.objects.filter(
+                    content_type=document_content_type,
+                    codename__in=['add_document', 'change_document', 'delete_document', 'view_document']
+                )
+                teacher_group.permissions.add(*document_perms)
+                
+                # Přiřazení oprávnění k výchozí kolekci dokumentů
+                # Wagtail vyžaduje oprávnění k kolekci pro zobrazení menu
+                try:
+                    from wagtail.models import GroupCollectionPermission
+                    
+                    # Získání výchozí kolekce (root collection)
+                    root_collection = Collection.get_first_root_node()
+                    if root_collection:
+                        # Přiřazení oprávnění k root kolekci pro skupinu Teacher
+                        # Použijeme oprávnění pro dokumenty, ne pro kolekce
+                        # Wagtail kontroluje, zda má skupina oprávnění k dokumentům v kolekci
+                        add_doc_perm = Permission.objects.filter(
+                            content_type=document_content_type,
+                            codename='add_document'
+                        ).first()
+                        change_doc_perm = Permission.objects.filter(
+                            content_type=document_content_type,
+                            codename='change_document'
+                        ).first()
+                        
+                        if add_doc_perm:
+                            GroupCollectionPermission.objects.get_or_create(
+                                group=teacher_group,
+                                collection=root_collection,
+                                permission=add_doc_perm
+                            )
+                        if change_doc_perm:
+                            GroupCollectionPermission.objects.get_or_create(
+                                group=teacher_group,
+                                collection=root_collection,
+                                permission=change_doc_perm
+                            )
+                        
+                        self.stdout.write(
+                            self.style.SUCCESS(
+                                f'Přiřazena oprávnění k root kolekci pro skupinu "{TEACHER_GROUP}"'
+                            )
+                        )
+                except Exception as e:
+                    self.stdout.write(
+                        self.style.WARNING(f'Varování: Nepodařilo se přiřadit oprávnění k kolekci: {e}')
+                    )
+            
             # Přiřazení oprávnění k přístupu do adminu skupině
             teacher_group.permissions.add(access_admin_perm)
             
@@ -101,8 +159,42 @@ class Command(BaseCommand):
             teachers.filter(is_staff=False).update(is_staff=True)
             
             # Přiřazení oprávnění přímo všem učitelům
+            root_collection = Collection.get_first_root_node()
             for teacher in teachers:
                 teacher.user_permissions.add(access_admin_perm)
+                # Také přiřadit oprávnění pro dokumenty
+                if document_content_type:
+                    teacher.user_permissions.add(*document_perms)
+                
+                # Přiřazení oprávnění k root kolekci přímo uživateli
+                if root_collection:
+                    try:
+                        from wagtail.models import GroupCollectionPermission
+                        add_doc_perm = Permission.objects.filter(
+                            content_type=document_content_type,
+                            codename='add_document'
+                        ).first()
+                        change_doc_perm = Permission.objects.filter(
+                            content_type=document_content_type,
+                            codename='change_document'
+                        ).first()
+                        
+                        # Vytvoříme GroupCollectionPermission pro každého učitele
+                        # (i když je to GroupCollectionPermission, můžeme použít skupinu Teacher)
+                        if add_doc_perm:
+                            GroupCollectionPermission.objects.get_or_create(
+                                group=teacher_group,
+                                collection=root_collection,
+                                permission=add_doc_perm
+                            )
+                        if change_doc_perm:
+                            GroupCollectionPermission.objects.get_or_create(
+                                group=teacher_group,
+                                collection=root_collection,
+                                permission=change_doc_perm
+                            )
+                    except Exception:
+                        pass
             
             count = teachers.count()
             

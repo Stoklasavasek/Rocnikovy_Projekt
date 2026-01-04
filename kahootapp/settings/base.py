@@ -215,16 +215,19 @@ DATA_UPLOAD_MAX_NUMBER_FIELDS = 10_000
 # Základní nastavení Wagtailu (název, fulltextové vyhledávání, URL admina).
 WAGTAIL_SITE_NAME = "QuizIT!"
 
+# Wagtail search backend - používáme jednoduchý database backend
+# (ne postgres backend, který má problémy s indexováním dokumentů)
 WAGTAILSEARCH_BACKENDS = {
     "default": {
         "BACKEND": "wagtail.search.backends.database",
+        "ATOMIC_REBUILD": True,
     }
 }
 
 WAGTAILADMIN_BASE_URL = "http://example.com"
 
-# Povolené přípony dokumentů pro Wagtail dokumenty.
-WAGTAILDOCS_EXTENSIONS = ['csv', 'docx', 'key', 'odt', 'pdf', 'pptx', 'rtf', 'txt', 'xlsx', 'zip']
+# Povolené přípony dokumentů pro Wagtail dokumenty (včetně video formátů).
+WAGTAILDOCS_EXTENSIONS = ['csv', 'docx', 'key', 'odt', 'pdf', 'pptx', 'rtf', 'txt', 'xlsx', 'zip', 'mp4', 'webm', 'ogg', 'avi', 'mov', 'mkv']
 
 # Fix pro django_tasks - zakázat enqueue_on_commit kvůli nekompatibilitě s Wagtail.
 # Vše běží synchronně v rámci requestu, což je pro tento školní projekt v pohodě.

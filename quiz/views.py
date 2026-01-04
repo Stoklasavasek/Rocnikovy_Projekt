@@ -223,7 +223,21 @@ def _get_or_create_participant(session, user):
 
 
 def _get_educational_materials(quiz_id, show_before=False, show_after=False):
-    """Načte vzdělávací materiály pro daný kvíz."""
+    """
+    Načte vzdělávací materiály pro daný kvíz.
+    
+    Args:
+        quiz_id: ID kvízu, ke kterému se materiály vztahují
+        show_before: Pokud True, vrátí pouze materiály označené pro zobrazení před kvízem
+        show_after: Pokud True, vrátí pouze materiály označené pro zobrazení po kvízu
+    
+    Returns:
+        QuerySet EducationalMaterial objektů nebo prázdný seznam při chybě
+    
+    Note:
+        Materiály musí být publikované (live=True) a přiřazené ke kvízu.
+        Používá se v různých view funkcích pro zobrazení materiálů studentům.
+    """
     try:
         from home.models import EducationalMaterial
         filters = {"related_quiz_id": quiz_id, "live": True}

@@ -21,7 +21,12 @@ class HomeConfig(AppConfig):
         """
         Metoda volaná při startu aplikace.
         
-        Načte signály pro automatické vytváření uživatelských skupin
-        a přiřazování oprávnění.
+        Načte signály pro automatické vytváření uživatelských skupin,
+        přiřazování oprávnění a monkey patching pro Wagtail dokumenty.
+        
+        Důležité:
+        - signals.py: Vytváří skupiny Teacher/Student a přiřazuje oprávnění
+        - wagtail_signals.py: Opravuje bug v Wagtail search backendu pro dokumenty
         """
-        from . import signals  # noqa: F401
+        from . import signals  # noqa: F401 - načte signály pro role a oprávnění
+        from . import wagtail_signals  # noqa: F401 - načte monkey patching pro dokumenty

@@ -1,4 +1,18 @@
-"""Signály pro správu uživatelských rolí a oprávnění."""
+"""
+Signály pro správu uživatelských rolí a oprávnění.
+
+CO TO DĚLÁ:
+Automaticky vytváří skupiny "Teacher" a "Student" a přiřazuje oprávnění.
+Když se uživatel zaregistruje, automaticky se přidá do skupiny "Student".
+Když se uživatel přidá do skupiny "Teacher", automaticky dostane:
+- is_staff=True (přístup do Django/Wagtail adminu)
+- Oprávnění k vytváření a správě kvízů
+- Oprávnění k nahrávání dokumentů (videa, PDF) v Wagtail adminu
+
+PROČ TO POTŘEBUJEME:
+Aby učitelé mohli vytvářet kvízy, spouštět živá sezení a nahrávat vzdělávací materiály
+bez nutnosti ručního nastavování oprávnění v Django adminu.
+"""
 from django.contrib.auth.models import Group, Permission, User
 from django.contrib.contenttypes.models import ContentType
 from django.db.models.signals import post_migrate, m2m_changed
@@ -45,6 +59,36 @@ def assign_quiz_permissions():
         pass
 
 
+def assign_wagtail_document_permissions():
+    """
+    Přiřadí učitelům oprávnění pro správu dokumentů (videa, PDF, atd.).
+    
+    Učitelé potřebují oprávnění k dokumentům, aby mohli:
+    - Nahrávat videa a dokumenty do Wagtail adminu
+    - Propojovat je s EducationalMaterial stránkami
+    - Zobrazit menu "Dokumenty" v Wagtail adminu (vyžaduje view_document)
+    
+    Note:
+        Tato oprávnění se přiřazují automaticky při migraci přes post_migrate signal.
+    """
+    try:
+        teacher_group = Group.objects.get(name=TEACHER_GROUP)
+        document_content_type = ContentType.objects.filter(
+            app_label='wagtaildocs',
+            model='document'
+        ).first()
+        
+        if document_content_type:
+            # Přidáme také view_document, aby se zobrazilo menu "Dokumenty"
+            document_perms = Permission.objects.filter(
+                content_type=document_content_type,
+                codename__in=['add_document', 'change_document', 'delete_document', 'view_document']
+            )
+            teacher_group.permissions.add(*document_perms)
+    except Exception:
+        pass
+
+
 def ensure_teachers_have_staff_access():
     """Zajistí, že všichni učitelé mají is_staff=True pro přístup do Wagtail adminu."""
     try:
@@ -61,6 +105,7 @@ def create_default_groups(sender, **kwargs):
     """Vytvoří výchozí skupiny a přiřadí oprávnění po migraci."""
     ensure_role_groups_exist()
     assign_quiz_permissions()
+    assign_wagtail_document_permissions()
     ensure_teachers_have_staff_access()
 
 
@@ -74,8 +119,18 @@ def assign_student_group_on_signup(request, user, **kwargs):
 
 def assign_wagtail_permissions_to_teacher(user):
     """
-    Přiřadí učiteli oprávnění k přístupu do Wagtail adminu.
+    Přiřadí učiteli oprávnění k přístupu do Wagtail adminu a správu dokumentů.
+    
     Oprávnění k editaci stránek se přiřazují přes skupinu automaticky.
+    Tato funkce se volá automaticky při přidání uživatele do skupiny Teacher
+    (přes m2m_changed signal).
+    
+    Args:
+        user: Django User objekt učitele
+    
+    Note:
+        - access_admin: Povolí přístup do Wagtail adminu
+        - Dokumenty: Umožní nahrávat a spravovat dokumenty (videa, PDF, atd.)
     """
     if not WAGTAIL_AVAILABLE:
         return
@@ -89,6 +144,20 @@ def assign_wagtail_permissions_to_teacher(user):
         
         if access_admin_perm:
             user.user_permissions.add(access_admin_perm)
+        
+        # Oprávnění pro správu dokumentů (nahrávání, úprava, mazání)
+        document_content_type = ContentType.objects.filter(
+            app_label='wagtaildocs',
+            model='document'
+        ).first()
+        
+        if document_content_type:
+            # Přidáme také view_document, aby se zobrazilo menu
+            document_perms = Permission.objects.filter(
+                content_type=document_content_type,
+                codename__in=['add_document', 'change_document', 'delete_document', 'view_document']
+            )
+            user.user_permissions.add(*document_perms)
     except Exception:
         pass
 
