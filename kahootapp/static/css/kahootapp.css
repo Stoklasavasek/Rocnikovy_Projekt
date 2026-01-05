@@ -1,20 +1,26 @@
 /* ===== CSS VARIABLES ===== */
+/* 
+ * CSS proměnné pro světlý a tmavý režim.
+ * Použití: var(--primary) místo konkrétní barvy umožňuje snadné přepínání témat.
+ * Všechny barvy jsou definovány zde, což zajišťuje konzistenci napříč aplikací.
+ */
 :root {
-  --bg: #f5f7fa;
-  --fg: #1a1a1a;
-  --muted: #6b7280;
-  --card: #ffffff;
-  --border: #e5e7eb;
-  --primary: #6366f1;
-  --primary-dark: #4f46e5;
-  --success: #10b981;
-  --error: #ef4444;
-  --warning: #f59e0b;
+  --bg: #f5f7fa;              /* Pozadí stránky */
+  --fg: #1a1a1a;              /* Hlavní text */
+  --muted: #6b7280;           /* Sekundární text */
+  --card: #ffffff;            /* Pozadí karet */
+  --border: #e5e7eb;         /* Barva rámečků */
+  --primary: #6366f1;        /* Hlavní barva (indigo) */
+  --primary-dark: #4f46e5;   /* Tmavší varianta hlavní barvy */
+  --success: #10b981;        /* Zelená pro úspěch */
+  --error: #ef4444;          /* Červená pro chyby */
+  --warning: #f59e0b;        /* Oranžová pro varování */
   --shadow-sm: 0 1px 2px 0 rgba(0,0,0,0.05);
   --shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
   --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
 }
 
+/* Tmavý režim - aktivuje se pomocí data-theme="dark" atributu */
 [data-theme="dark"] {
   --bg: #1a1a1a;
   --fg: #f5f7fa;
@@ -29,6 +35,11 @@
 }
 
 /* ===== UTILITY CLASSES ===== */
+/* 
+ * Znovupoužitelné utility třídy pro rychlé stylování.
+ * Použití: <div class="bg-card pad rounded"> místo inline stylů.
+ * Optimalizace: Kombinace více tříd na jednom řádku snižuje velikost souboru.
+ */
 .bg-card { background: var(--card); } .text-fg { color: var(--fg); } .text-muted { color: var(--muted); } .text-center { text-align: center; }
 .border-border { border: 1px solid var(--border); } .border-border-2 { border: 2px solid var(--border); } .border-border-3 { border: 3px solid var(--border); }
 .rounded { border-radius: 12px; } .rounded-lg, .rounded-xl { border-radius: 16px; }

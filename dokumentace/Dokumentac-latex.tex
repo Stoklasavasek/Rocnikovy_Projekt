@@ -1,0 +1,784 @@
+% ŠABLONA PRO PSANÍ ZÁVĚREČNÉ STUDIJNÍ PRÁCE
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Autor: Jakub Dokulil (kubadokulil99@gmail.com)
+% Tato šablona byla vytvořena tak, aby pomocí ní mohli v systému LaTeX soutěžící sázet své práce a zároveň odpovídala požadavkům na formátování vyplývajícím z wordové šablony umístěné na webu soc.cz.
+%
+\documentclass[12pt, a4paper,
+%oneside,      %% -- odkomentujte, pokud chcete svou práci mít pouze jednostrannou, mezera pro hřbet pak automaticky bude pouze na levé straně
+twoside,        %% -- pro oboustranné práce, mezera pro hřbet následně střídá strany.
+openright
+]{report}
+
+
+% --- odstraneni zbytkoveho textu "superiorSup" a pod. ---
+\AtBeginDocument{%
+	% pojistka proti nechtenemu textu nactenemu z aux/toc
+	\immediate\write16{(cleaning stray figureversions output...)}%
+	\clearpage
+	\thispagestyle{empty}
+	% uplne vyprazdneni vseho, co by se objevilo mimo hlavni text
+	\let\superiorSup\relax
+	\let\textOsF\relax
+	\let\textTOsF\relax
+	\let\liningLF\relax
+	\let\liningTLF\relax
+	\let\tabularTab\relax
+	\let\proportionalProp\relax
+	\let\tabularmath\relax
+	\let\proportionalmath\relax
+	\let\fontspechyperref\relax
+	% zajisteni, ze se nic nezobrazi pred titulni stranou
+	\null
+	\newpage
+}
+%% Nutné balíčky a nastavení
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% Proměnné
+\newcommand\obor{INFORMAČNÍ TECHNOLOGIE} %% -- napiš číslo a název tvého oboru
+\newcommand\kodOboru{18-20-M/01} %% -- napiš číslo a název tvého oboru
+\newcommand\zamereni{se zaměřením na počítačové sítě a programování} %% -- napiš číslo a název tvého oboru
+\newcommand\skola{Střední škola průmyslová a umělecká, Opava} %% vyplň název školy
+\newcommand\trida{IT4} %% vyplň jméno svého konzultanta
+\newcommand\jmenoAutora{Václav Stoklasa}  %% vyplň své jméno
+\newcommand\skolniRok{2025/26} %% vyplň rok
+\newcommand\datumOdevzdani{1.~1.~2026} %% vyplň rok
+\newcommand\nazevPrace{Webová aplikace pro tvorbu a řízení interaktivních kvízů} %% vyplň název své práce
+
+\title{\nazevPrace} %% -- Název tvé práce
+\author{\jmenoAutora} %% -- tvé jméno
+\date{\datumOdevzdani} %% -- rok, kdy píšeš SOČku
+
+\usepackage[top=2.5cm, bottom=2.5cm, left=3.5cm, right=1.5cm]{geometry} %% nastaví okraje, left -- vnitřní okraj, right -- vnější okraj
+
+\usepackage[czech]{babel} %% balík babel pro sazbu v češtině
+\usepackage[utf8]{inputenc} %% balíky pro kódování textu
+\usepackage[T1]{fontenc}
+\usepackage{cmap} %% balíček zajišťující, že vytvořené PDF bude prohledávatelné a kopírovatelné
+
+\usepackage{graphicx} %% balík pro vkládání obrázků
+
+\usepackage{subcaption} %% balíček pro vkládání podobrázků
+
+\usepackage{hyperref} %% balíček, který v PDF vytváří odkazy
+
+\linespread{1.25} %% řádkování
+\setlength{\parskip}{0.5em} %% odsazení mezi odstavci
+
+
+\usepackage[pagestyles]{titlesec} %% balíček pro úpravu stylu kapitol a sekcí
+\titleformat{\chapter}[block]{\scshape\bfseries\LARGE}{\thechapter}{10pt}{\vspace{0pt}}[\vspace{-22pt}]
+\titleformat{\section}[block]{\scshape\bfseries\Large}{\thesection}{10pt}{\vspace{0pt}}
+\titleformat{\subsection}[block]{\bfseries\large}{\thesubsection}{10pt}{\vspace{0pt}}
+\usepackage{float}
+
+\usepackage{tocloft} % Balíček umožní přizpůsobit vzhled tabulky obsahu
+\setlength{\cftbeforechapskip}{0pt}  % Menší rozestup pro kapitoly
+\setlength{\cftbeforesecskip}{0pt}   % Menší rozestup pro sekce
+
+\setcounter{secnumdepth}{2}
+\setcounter{tocdepth}{1}
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\renewcommand{\headrulewidth}{0.025pt}
+
+\usepackage{booktabs}
+
+\usepackage{url}
+
+%% Balíčky co se můžou hodit :) 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\usepackage{pdfpages} %% Balíček umožňující vkládat stránky z PDF souborů, 
+
+\usepackage{upgreek} %% Balíček pro sazbu stojatých řeckých písmen, třeba u jednotky mikrometr. Například stojaté mí: \upmu, stojaté pí: \uppi
+
+\usepackage{amsmath}    %% Balíčky amsmath a amsfonts 
+\usepackage{amsfonts}   %% pro sazbu matematických symbolů
+\usepackage{esint}     %% pro sazbu různých integrálů (např \oiint)
+\usepackage{mathrsfs}
+\usepackage{helvet} % Helvet font
+\usepackage{mathptmx} % Times New Roman
+\makeatletter
+\@namedef{ver@figureversions.sty}{9999/99/99}
+\newcommand{\DeclareFigureVersion}[2]{}
+\newcommand{\figureversion}[1]{}
+\makeatother
+
+
+\makeatletter
+\providecommand{\superiorSup}{}
+\providecommand{\textOsF}{}
+\providecommand{\textTOsF}{}
+\providecommand{\liningLF}{}
+\providecommand{\liningTLF}{}
+\providecommand{\tabularTab}{}
+\providecommand{\proportionalProp}{}
+\makeatother
+\makeatletter
+\providecommand{\superiorSup}{}
+\providecommand{\textOsF}{}
+\providecommand{\textTOsF}{}
+\providecommand{\liningLF}{}
+\providecommand{\liningTLF}{}
+\providecommand{\tabularTab}{}
+\providecommand{\proportionalProp}{}
+\providecommand{\tabularmath}{}
+\providecommand{\proportionalmath}{}
+\makeatother
+
+\usepackage{Oswald} % Oswald font
+
+
+%% makra pro sazbu matematiky
+\newcommand{\dif}{\mathrm{d}} %% makro pro sazbu diferenciálu, místo toho
+%% abych musel psát '\mathrm{d}' mi stačí napsat '\dif' což je mnohem 
+%% kratší a mohu si tak usnadnit práci
+
+\usepackage{listings}
+\usepackage{xcolor}
+
+\renewcommand{\lstlistingname}{Kód}% Listing -> Algorithm
+\renewcommand{\lstlistlistingname}{Seznam programových kódů}% List of Listings -> List of Algorithms
+
+%% Definice 
+\lstdefinelanguage{JavaScript}{
+	morekeywords=[1]{break, continue, delete, else, for, function, if, in,
+		new, return, this, typeof, var, void, while, with},
+	% Literals, primitive types, and reference types.
+	morekeywords=[2]{false, null, true, boolean, number, undefined,
+		Array, Boolean, Date, Math, Number, String, Object},
+	% Built-ins.
+	morekeywords=[3]{eval, parseInt, parseFloat, escape, unescape},
+	sensitive,
+	morecomment=[s]{/*}{*/},
+	morecomment=[l]//,
+	morecomment=[s]{/**}{*/}, % JavaDoc style comments
+	morestring=[b]',
+	morestring=[b]"
+}[keywords, comments, strings]
+
+
+\lstdefinelanguage[ECMAScript2015]{JavaScript}[]{JavaScript}{
+	morekeywords=[1]{await, async, case, catch, class, const, default, do,
+		enum, export, extends, finally, from, implements, import, instanceof,
+		let, static, super, switch, throw, try},
+	morestring=[b]` % Interpolation strings.
+}
+
+\lstalias[]{ES6}[ECMAScript2015]{JavaScript}
+
+% Nastavení barev
+% Requires package: color.
+\definecolor{mediumgray}{rgb}{0.3, 0.4, 0.4}
+\definecolor{mediumblue}{rgb}{0.0, 0.0, 0.8}
+\definecolor{forestgreen}{rgb}{0.13, 0.55, 0.13}
+\definecolor{darkviolet}{rgb}{0.58, 0.0, 0.83}
+\definecolor{royalblue}{rgb}{0.25, 0.41, 0.88}
+\definecolor{crimson}{rgb}{0.86, 0.8, 0.24}
+
+% Nastavení pro Python
+\lstdefinestyle{Python}{
+	language=Python,
+	backgroundcolor=\color{white},
+	basicstyle=\ttfamily,
+	breakatwhitespace=false,
+	breaklines=false,
+	captionpos=b,
+	columns=fullflexible,
+	commentstyle=\color{mediumgray}\upshape,
+	emph={},
+	emphstyle=\color{crimson},
+	extendedchars=true,  % requires inputenc
+	fontadjust=true,
+	frame=single,
+	identifierstyle=\color{black},
+	keepspaces=true,
+	keywordstyle=\color{mediumblue},
+	keywordstyle={[2]\color{darkviolet}},
+	keywordstyle={[3]\color{royalblue}},
+	literate=%
+	{á}{{\'a}}1 {č}{{\v{c}}}1 {ď}{{\v{d}}}1 {é}{{\'e}}1 {ě}{{\v{e}}}1
+	{í}{{\'i}}1 {ň}{{\v{n}}}1 {ó}{{\'o}}1 {ř}{{\v{r}}}1 {š}{{\v{s}}}1
+	{ť}{{\v{t}}}1 {ú}{{\'u}}1 {ů}{{\r{u}}}1 {ý}{{\'y}}1 {ž}{{\v{z}}}1,		
+	numbers=left,
+	numbersep=5pt,
+	numberstyle=\tiny\color{black},
+	rulecolor=\color{black},
+	showlines=true,
+	showspaces=false,
+	showstringspaces=false,
+	showtabs=false,
+	stringstyle=\color{forestgreen},
+	tabsize=2,
+	title=\lstname,
+	upquote=true  % requires textcomp	
+}
+
+
+\lstdefinestyle{JSES6Base}{
+	backgroundcolor=\color{white},
+	basicstyle=\ttfamily,
+	breakatwhitespace=false,
+	breaklines=false,
+	captionpos=b,
+	columns=fullflexible,
+	commentstyle=\color{mediumgray}\upshape,
+	emph={},
+	emphstyle=\color{crimson},
+	extendedchars=true,  % requires inputenc
+	fontadjust=true,
+	frame=single,
+	identifierstyle=\color{black},
+	keepspaces=true,
+	keywordstyle=\color{mediumblue},
+	keywordstyle={[2]\color{darkviolet}},
+	keywordstyle={[3]\color{royalblue}},
+ literate=%
+{á}{{\'a}}1 {č}{{\v{c}}}1 {ď}{{\v{d}}}1 {é}{{\'e}}1 {ě}{{\v{e}}}1
+{í}{{\'i}}1 {ň}{{\v{n}}}1 {ó}{{\'o}}1 {ř}{{\v{r}}}1 {š}{{\v{s}}}1
+{ť}{{\v{t}}}1 {ú}{{\'u}}1 {ů}{{\r{u}}}1 {ý}{{\'y}}1 {ž}{{\v{z}}}1,		
+	numbers=left,
+	numbersep=5pt,
+	numberstyle=\tiny\color{black},
+	rulecolor=\color{black},
+	showlines=true,
+	showspaces=false,
+	showstringspaces=false,
+	showtabs=false,
+	stringstyle=\color{forestgreen},
+	tabsize=2,
+	title=\lstname,
+	upquote=true  % requires textcomp
+}
+
+\lstdefinestyle{JavaScript}{
+	language=JavaScript,
+	style=JSES6Base,
+}
+\lstdefinestyle{ES6}{
+	language=ES6,
+	style=JSES6Base
+}
+
+\setlength{\headheight}{15pt}
+
+%% Bordel pro práci - můžeš smáznout :) 
+%%%%%%%%%%%%%%%%%%%
+
+\usepackage{lipsum} %% balíček který píše lipsum (nesmyslný text, který se používá pro kontrolu typografie)
+
+\AtBeginDocument{\clearpage\pagestyle{empty}}
+
+%% Začátek dokumentu
+%%%%%%%%%%%%%%%%%%%%
+\begin{document}
+	
+	\pagestyle{empty}
+	\pagenumbering{Roman}
+	
+	\cleardoublepage
+
+%% Titulní stránka s informacemi
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+	
+	{\fontfamily{phv}\selectfont
+		%% Logo školy
+		\begin{figure}[h]
+			\centering
+			\includegraphics[width=0.6\linewidth]{image/logo-skoly.png} 
+		\end{figure}
+		
+		
+		%% Hlavička práce a její název (viz proměnná \nazev prace)
+		%% \sffamily %%% bezpatkové písmo - sans serif
+		{\bfseries %%% písmo na stránce je tučně
+			\begin{center}
+				\vspace{0.025 \textheight}
+				\LARGE{ZÁVĚREČNÁ STUDIJNÍ PRÁCE}\\
+				\large{dokumentace}\\
+				\vspace{0.075 \textheight}
+				\LARGE {\nazevPrace}\\
+			\end{center}  
+		}%%%
+		
+		\begin{figure}[h]
+			\centering
+			\includegraphics[width=0.8\linewidth]{image/prosim.png} 
+		\end{figure}
+		
+		\vspace{0.02 \textheight}
+		\begin{table}[h!]
+			\begin{tabular}{ll}
+				\textbf{Autor:} & \jmenoAutora\\ 
+				\textbf{Obor:} & \kodOboru { } \obor\\
+				\textbf{} & \zamereni\\
+				\textbf{Třída: IT4} & \trida\\
+				\textbf{Školní rok: 2025/26} & \skolniRok\\
+			\end{tabular}
+			
+		\end{table}		
+	}
+	
+\cleardoublepage %% Zalomení dvojstránky
+	
+%% Stránka obsahující poděkování a prohlášení
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% Poděkování - nepovinné
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+	
+	\noindent{\large{\bfseries{Poděkování}\\}}
+	\noindent Rád bych poděkoval Ing.~Petru Grussmannovi za odborné vedení práce a~Mgr.~Marku Lučnému za poskytnutí nápadu projektu a jeho podporu při zpracování.
+	
+	\vspace*{0.7\textheight} %% Vertikální mezeru je možné upravit
+
+%% Prohlášení - povinné
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+	\noindent{\large{\bfseries{Prohlášení}\\}}  %% uprav si koncovky podle toho na jaký rod se cítíš, vypadá to pak lépe :) 
+	\noindent{Prohlašuji, že jsem závěrečnou práci vypracoval samostatně a uvedl veškeré použité 
+		informační zdroje.\\}
+	\noindent{Souhlasím, aby tato studijní práce byla použita k výukovým a prezentačním účelům na Střední průmyslové a umělecké škole v Opavě, Praskova 399/8.}
+	\vfill
+	\noindent{V Opavě \datumOdevzdani\\}
+	\noindent
+	\begin{minipage}{\linewidth}
+		\hspace{9.5cm} 
+		\begin{tabular}{@{}p{6cm}@{}}
+			\dotfill \\
+			Podpis autora
+		\end{tabular}
+	\end{minipage}
+	
+	\cleardoublepage %% Zalomení dvojstránky
+
+%% Stránka obsahující abstrakt (anotaci)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
+
+%% Abstrakt v češtině
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+	\noindent{\Large{\bfseries{Abstrakt}\\}}
+	\noindent Výsledkem práce je webová aplikace QuizIT! pro interaktivní kvízy
+	určené pro školy. Učitelé v~aplikaci mohou vytvářet vlastní kvízy s otázkami a odpověďmi a
+	spouštět živá kvízová sezení. Studenti se ke kvízům připojují pomocí unikátního kódu a
+	odpovídají na otázky v reálném čase. Body se počítají podle správnosti odpovědi a rychlosti
+	reakce. Aplikace obsahuje systém žolíků a průběžný žebříček účastníků, který se během kvízu
+	automaticky aktualizuje.
+	
+	Aplikace je postavena na frameworku Django, pro správu vzdělávacích materiálů využívá
+	Wagtail CMS a data ukládá do databáze PostgreSQL. Přihlašování uživatelů je řešeno pomocí
+	OAuth autentizace a real-time komunikace probíhá prostřednictvím technologie Socket.IO.
+	\vspace{18pt}
+	
+	\noindent{\large{\bfseries{Klíčová slova}}}
+	
+	\noindent interaktivní kvízy, webová aplikace, školní výuka, Django, Wagtail CMS,
+	PostgreSQL, OAuth, Socket.IO, real-time komunikace
+	
+	\vspace{18pt}
+
+%% Abstrakt v angličtině
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
+	\noindent{\Large{\bfseries{Abstract}}}
+	\noindent 
+	
+	The result of this project is a web application called QuizIT! designed for
+	interactive quizzes intended for use in schools. Teachers can create their own quizzes
+	with questions and answers and run live quiz sessions. Students join the quizzes using a
+	unique code and answer questions in real time. Scoring is based on the correctness of the
+	answer and the response speed. The~application includes a joker system and a live
+	leaderboard that is updated during the quiz.
+	
+	The application is built using the Django framework, with Wagtail CMS used for managing
+	educational materials and PostgreSQL as the database system. User authentication is
+	handled via OAuth, and real-time communication is provided by Socket.IO.
+	
+	\vspace{18pt}
+	
+	\noindent{\large{\bfseries{Keywords}}}
+	
+	\noindent interactive quizzes, web application, school education, Django, Wagtail CMS,
+	PostgreSQL, OAuth, Socket.IO, real-time communication
+	
+	\clearpage %% Zalomení stránky
+
+%% Stránka s generovaným obsahem
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
+	
+	\cleardoublepage
+	\pagestyle{plain}
+	\pagenumbering{arabic}
+	\setcounter{page}{1} %% Nastavení počitadla stránek
+
+%% Stránka s úvodem - povinná část
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%		
+	\chapter*{Úvod}
+%Tento příkaz vytvoří novou kapitolu s názvem "Úvod" ve vašem dokumentu.
+%Hvězdička * u příkazu \chapter* znamená, že tato kapitola nebude mít číslo. Ve výsledném dokumentu se tedy objeví jako "Úvod" bez předcházejícího čísla kapitoly, které se obvykle zobrazuje u číslovaných kapitol.
+%Tento příkaz také znamená, že kapitola se automaticky neobjeví v obsahu, protože LaTeX standardně zahrnuje do obsahu pouze číslované kapitoly.
+	\addcontentsline{toc}{chapter}{Úvod}
+%Tento příkaz ručně přidává záznam do obsahu.
+%První parametr toc označuje, že přidáváme záznam do Table of Contents (obsahu).
+%Druhý parametr chapter specifikuje úroveň záznamu. V tomto případě říkáme, že přidávaný záznam má být považován za kapitolu.
+%Třetí parametr Úvod je text, který se objeví v obsahu. V tomto případě bude v obsahu zobrazen název "Úvod".	
+Z~vlastní zkušenosti mohu říct, že kvízy patří ve~výuce mezi nejoblíbenější formy ověřování znalostí. Studenti se  do~nich většinou zapojují více než při klasickém zkoušení. Písemné testy a~ústní zkoušení často neposkytují okamžitou zpětnou vazbu a ne vždy zaujmou všechny studenty. Interaktivní kvízové aplikace tento problém řeší. Spojují výuku s herními prvky a zvyšují motivaci studentů. Zároveň učitelům umožňují rychle získat přehled o znalostech celé třídy. Proto se v posledních letech ve školách používají stále častěji.
+
+Cílem této práce bylo vytvořit webovou aplikaci QuizIT! pro~interaktivní kvízy, která je~snadno použitelná ve~školním prostředí. Aplikace umožňuje učitelům vytvářet vlastní kvízy s~otázkami a odpověďmi a spouštět živá kvízová sezení. Studenti se do těchto sezení připojují pomocí unikátního kódu a odpovídají na otázky v reálném čase. Hodnocení je založeno na~správnosti odpovědi i rychlosti reakce. Součástí aplikace je systém žolíků, průběžný žebříček a~aktualizace výsledků v reálném čase pomocí technologie Socket.IO. Pro zvýšení efektivity výuky aplikace umožňuje vytvářet vzdělávací materiály prostřednictvím systému Wagtail CMS. Aplikace je~postavena na frameworku Django, využívá databázi PostgreSQL a autentizaci pomocí Microsoft OAuth. Celá webová stránka je navržena jako plně responzivní a podporuje světlý i tmavý režim.
+
+V dokumentaci projektu popisuji postup vytvoření této aplikace. Nejprve se věnuji návrhu databázového modelu a architektuře systému. Následně řeším autentizaci uživatelů, tvorbu a~správu kvízů a realizaci živých kvízových sezení. Dále se zaměřuji na integraci systému Wagtail CMS pro správu vzdělávacích materiálů. V závěru se věnuji vizuální stránce aplikace a její responzivitě.
+%Tipy k psaní úvodu
+%Je povinný, nadpis neměňte, rozsah - max. 1 strana. 
+%Tato část práce obsahuje: 
+%* náhled do řešené problematiky, zdůvodnění volby problematiky, 
+%* předem definované cíle práce, 
+%* motivaci pro další čtení textu včetně stručného uvedení obsahu následujících kapitol 
+
+
+\chapter{Teoretická a metodická východiska}
+
+\section{Interaktivní kvízové aplikace}
+
+Na internetu existuje mnoho kvízových aplikací pro výuku, z nichž nejznámější je Kahoot. Kromě něj jsou dostupné i další aplikace s různými funkcemi a omezeními. S některými z~nich jsem se setkal a často mi přišly zbytečně složité, málo přizpůsobitelné nebo dostupné až po~zaplacení. Přitom vytváření a správa kvízů nemusí být složité a mohou učitelům dobře posloužit k rychlému a přehlednému ověřování znalostí studentů.
+
+
+\section{Architektura databázových aplikací}
+
+Databázové webové aplikace jsou často založeny na architektuře MVC nebo její variantě MVT, kterou využívá framework Django. Aplikace je rozdělena na tři části – modely, pohledy a šablony. Uživatel odešle požadavek přes prohlížeč, který je zpracován v pohledu. Ten podle potřeby získá data z databáze pomocí modelu a předá je šabloně. Ta následně vytvoří výslednou stránku pro uživatele. Toto rozdělení zajišťuje přehlednější a lépe udržovatelný kód.
+Celou situaci můžeme znázornit diagramem na~obrázku~\ref{fig:MVC}.
+
+	\begin{figure}[h!]
+	\centering %% příkaz, který ti obrázek zarovná na střed
+	\includegraphics[width=0.7\textwidth]{image/MVC.png} %% vložení samotného obrátku
+	\caption{Diagram MVC architektury} %% popisek obrázku, nezapomeň na citace!
+	\label{fig:MVC} %% označení až budeš chtít na obrázek odkazovat
+\end{figure}
+
+\section{Základy webového vývoje}
+Webové aplikace fungují na principu architektury klient–server. Klientem je webový prohlížeč, který odesílá požadavky na server pomocí HTTP protokolu. Server tyto požadavky zpracuje, případně načte potřebná data z databáze, a vrátí odpověď ve formě HTML stránky, kterou prohlížeč zobrazí uživateli.
+
+U složitějších aplikací je nutné využívat programování na straně serveru, které umožňuje vytvářet dynamický obsah. Frameworky, jako je Django, usnadňují vývoj těchto aplikací tím, že poskytují hotovou strukturu, práci s databází, formuláři a základní zabezpečení.
+
+\chapter{Využité technologie}
+\label{sec:zVyužité technologie}
+
+\section{Django}
+Django je webový framework napsaný v jazyce Python, který slouží k vývoji webových aplikací. Nabízí nástroje pro práci s databází, například ORM, které umožňuje pracovat s databází pomocí objektů v kódu místo psaní SQL dotazů, a obsahuje také vestavěný administrační panel. Framework využívá již zmíněnou architekturu MVT (Model-View-Template), díky které je~kód přehlednější a logika aplikace je oddělena od jejího vzhledu. V projektu byla použita verze Django 4.2.
+
+
+\section{Wagtail CMS}
+Wagtail je redakční systém postavený na frameworku Django, který slouží ke správě obsahu webových aplikací. Umožňuje i ne-technickým uživatelům jednoduše vytvářet a upravovat obsah přes přehledné administrační rozhraní. V této aplikaci je Wagtail využit pro správu vzdělávacích materiálů, které se studentům zobrazují před zahájením kvízu nebo po jeho skončení.
+
+\section{Microsoft OAuth}
+Přihlášení přes Microsoft OAuth je řešeno pomocí klíčů vytvořených ve školním Microsoft Entra ID. Tyto klíče slouží k bezpečnému přihlášení uživatelů a nejsou uložené přímo v kódu aplikace.
+
+\section{PostgreSQL}
+PostgreSQL je relační databáze, která slouží k ukládání dat aplikace. V tomto projektu je využita pro ukládání všech důležitých informací, jako jsou kvízy, otázky, odpovědi, uživatelé a průběh živých sezení. Databáze běží v Docker kontejneru, což usnadňuje její spuštění a zajišťuje stejné prostředí při vývoji i nasazení aplikace.
+
+\section{Socket.IO}
+\label{sec:Socket.IO}
+Socket.IO je knihovna, která umožňuje komunikaci mezi klientem a serverem v reálném čase. Díky tomu je možné okamžitě aktualizovat data bez nutnosti znovu načítat stránku. V této aplikaci je Socket.IO využíván pro živé aktualizace statistik odpovědí, žebříčku a průběhu kvízu během živých sezení. Socket.IO server běží samostatně v Docker kontejneru a komunikuje s~Django aplikací.
+
+\begin{figure}[h!]
+	\centering %% příkaz, který ti obrázek zarovná na střed
+	\includegraphics[width=0.9\textwidth]{image/Socket.png} %% vložení samotného obrátku
+	\caption{Socket.IO} %% popisek obrázku, nezapomeň na citace!
+	\label{fig:Socket.IO} %% označení až budeš chtít na obrázek odkazovat
+\end{figure}
+
+\section{Docker}
+Docker je nástroj, který umožňuje balit aplikace a jejich závislosti do kontejnerů, aby bylo možné je spouštět stejným způsobem na různých systémech. Díky tomu není nutné složitě nastavovat prostředí pro běh aplikace. V této aplikaci je Docker využit ke spuštění Django serveru, databáze PostgreSQL a Socket.IO serveru pomocí Docker Compose.
+
+\chapter{Způsoby řešení a použité postupy}
+
+
+\section{Založení projektu}
+Projekt byl založen pomocí frameworku Django příkazem \texttt{ django-admin startproject kahootapp}. Následně byly vytvořeny jednotlivé aplikace pomocí příkazu\texttt{python manage.py startapp}, konkrétně aplikace quiz pro práci s kvízy a home pro integraci Wagtail CMS. 
+
+Závislosti projektu byly spravovány pomocí souboru requirements.txt, do kterého byly postupně přidávány potřebné knihovny. Na začátku vývoje byla použita databáze SQLite, která je výchozí databází Django a nevyžaduje složité nastavování. Dále byla provedena základní konfigurace projektu a přidání použitých aplikací do nastavení Django.
+%%\begin{verbatim}%%
+%%	\textbf{tučné písmo}, \textit{kurzíva}, \underline{podtržený text}%%
+%%\end{verbatim}%%
+
+%%\subsubsection{Seznamy a výčty}%%
+%%Seznamy jsou užitečné pro strukturování infor%%mací a jejich uspořádání do čitelné formy. \LaTeX{} podporuje nečíslované, číslované a popisné seznamy.
+
+%%\begin{verbatim}%%
+%%	\begin{itemize}%%
+	%%	\item Nečíslovaný seznam%%
+%%	\end{itemize}%%
+	
+	%%\begin{enumerate}%%
+	%%	\item Číslovaný seznam%%
+%%	\end{enumerate}%%
+	
+%%	\begin{description}%%
+	%%	\item[Popisek] Popisný seznam%%
+	%%end{description}%%
+%%\end{verbatim}%%
+
+\section{Adresářová struktura}
+
+\begin{figure}[h!]
+	\centering %% příkaz, který ti obrázek zarovná na střed
+	\includegraphics[width=0.65\textwidth]{image/adresarova-struktura.png} %% vložení samotného obrátku
+	\caption{Adresářová struktura} %% popisek obrázku, nezapomeň na citace!
+	\label{fig:Adresarova-struktura} %% označení až budeš chtít na obrázek odkazovat
+\end{figure}
+
+\section{Databázový model}
+\begin{figure}[h!]
+	\centering %% příkaz, který ti obrázek zarovná na střed
+	\includegraphics[width=0.8\textwidth]{image/ERDIA.png} %% vložení samotného obrátku
+	\caption{ER diagram} %% popisek obrázku, nezapomeň na citace!
+	\label{fig:ERdia} %% označení až budeš chtít na obrázek odkazovat
+\end{figure}
+
+\section{Autentizace a autorizace}
+Autentizace uživatelů je důležitou součástí aplikace, protože zajišťuje bezpečný přístup do systému a správné fungování jednotlivých částí aplikace. QuizIT! proto obsahuje uživatelský systém, který se stará o přihlašování uživatelů a omezení přístupu k vybraným funkcím.
+
+Při vývoji jsem nejprve zvažoval využití základního autentizačního systému Djanga, ten je~však poměrně jednoduchý a nenabízí dostatečné možnosti pro přihlašování pomocí externích služeb. Z tohoto důvodu jsem se rozhodl použít balíček django-allauth, který umožňuje rozšířenou správu uživatelských účtů.
+
+Uživatelé se mohou přihlásit klasickým způsobem pomocí uživatelského jména a hesla nebo prostřednictvím školního Microsoft účtu, který je řešen pomocí služby Microsoft Entra ID.
+
+
+\subsection{Balíček django-allauth}
+Balíček django-allauth slouží v aplikaci jako hlavní nástroj pro autentizaci a správu uživatelských účtů. Zajišťuje základní funkce, jako je přihlašování, registrace uživatelů a práce s hesly, a zároveň umožňuje přihlášení pomocí externích služeb, což zjednodušuje celý proces správy účtů.
+
+V projektu je django-allauth nastaven jako hlavní autentizační backend a umožňuje přihlášení pomocí uživatelského jména nebo e-mailu, případně prostřednictvím Microsoft účtu. Po~úspěšném přihlášení je uživatel automaticky přesměrován na hlavní stránku aplikace, odkud může pokračovat v její práci.
+
+\subsection{Autentizace pomocí Microsoft OAuth}
+Aplikace podporuje přihlášení pomocí Microsoft Entra ID přes technologii OAuth 2.0. Přihlašování pomocí účtů třetích stran je dnes velmi běžné a rychlé, protože uživatelé si nemusí vytvářet nový účet ani pamatovat další heslo. Vzhledem k tomu, že aplikaci vyvíjím pro školní prostředí, přišlo mi vhodné použít Microsoft účty, které se ve škole běžně používají.
+
+Pro tuto funkci jsem vytvořil aplikaci v prostředí Microsoft Entra ID a získal potřebné přihlašovací údaje. Ty jsou uloženy v souboru .env, což umožňuje měnit nastavení bez zásahu do~kódu. Přihlášení probíhá pomocí tlačítka „Přihlásit se přes Microsoft“ a po úspěšném ověření je uživatel automaticky přihlášen do aplikace.
+
+
+
+\begin{figure}[h!]
+	\centering %% příkaz, který ti obrázek zarovná na střed
+	\includegraphics[width=1.1\textwidth]{image/loginregister.png} %% vložení samotného obrátku
+	\caption{Přihlašovací a registrační formulář} %% popisek obrázku, nezapomeň na citace!
+	\label{fig:loginAregistr} %% označení až budeš chtít na obrázek odkazovat
+\end{figure}
+
+
+\subsection{Systém rolí a oprávnění}
+Aplikace rozlišuje tři role: admina, učitele a studenty. Systém je založen na Django skupinách, přičemž skupiny „Teacher“ a „Student“ jsou v aplikaci předem definovány. Noví uživatelé jsou při registraci automaticky zařazeni do skupiny „Student“.
+
+Učitelé a~admini mají rozšířená oprávnění. Mohou vytvářet kvízy, spouštět živá sezení, sledovat průběžné výsledky a spravovat vzdělávací materiály. Admini mají navíc přístup do administrační části aplikace, kde mohou spravovat obsah a základní nastavení systému. Studenti se~mohou pouze připojovat ke kvízům pomocí kódu a odpovídat na otázky.
+
+Omezování přístupu je řešeno kontrolou přihlášení a oprávnění přímo v kódu aplikace. V šablonách se používá filtr {% if user|is_teacher %}, který zobrazuje funkce pro správu aplikace pouze učitelům a adminům.
+
+
+\section{Kvízy a živá sezení}
+Aplikace umožňuje učitelům vytvářet vlastní kvízy s otázkami a odpověďmi. Kvíz si mohou spustit buď jen pro sebe v jednoduchém režimu, nebo jako živé sezení pro studenty. 
+
+Při živém sezení se studenti připojí a postupně odpovídají na otázky. Učitel během kvízu vidí jeho průběh i výsledky jednotlivých studentů.
+
+\subsection{Tvorba a správa kvízů}
+
+\subsubsection{Vytváření kvízů}
+Učitelé vytvářejí kvízy pomocí jednoduchého formuláře. Zadají název kvízu a počet žolíků. Ke~každé otázce mohou napsat text, přidat obrázek a nastavit čas na odpověď.
+
+ Otázka může mít až deset odpovědí a alespoň jedna z nich musí být správná. Formulář umožňuje přidat více otázek najednou. Všechny údaje se uloží po odeslání formuláře.
+
+
+\begin{figure}[h!]
+	\centering %% příkaz, který ti obrázek zarovná na střed
+	\includegraphics[width=0.8\textwidth]{image/tvorbaKvizu.png} %% vložení samotného obrátku
+	\caption{Formulář pro vytváření kvízů} %% popisek obrázku, nezapomeň na citace!
+	\label{fig:TvorbaKvizu} %% označení až budeš chtít na obrázek odkazovat
+\end{figure}
+
+
+\subsubsection{Správa kvízů}
+V přehledu „Moje kvízy“ jsou zobrazeny všechny kvízy, které učitel vytvořil. U každého kvízu je vidět jeho název a kód, který slouží jako jeho jednoznačné označení v systému. Z tohoto přehledu může učitel kvíz upravit, smazat nebo spustit.
+
+Zároveň je zde možné vytvořit nový kvíz, spustit kvíz pro sebe v jednoduchém režimu nebo zahájit živé sezení pro vybraný kvíz. V přehledu jsou také vidět aktuálně běžící sezení, u kterých může učitel přejít do lobby nebo sezení ukončit.
+
+
+\begin{figure}[h!]
+	\centering %% příkaz, který ti obrázek zarovná na střed
+	\includegraphics[width=0.9\textwidth]{image/spravaKvizu.png} %% vložení samotného obrátku
+	\caption{Správa kvízů} %% popisek obrázku, nezapomeň na citace!
+	\label{fig:SpravaKvizu} %% označení až budeš chtít na obrázek odkazovat
+\end{figure}
+
+\subsection{Vytváření sezení a připojování studentů}
+Učitel vytvoří živé sezení kliknutím na tlačítko „Start live“ u vybraného kvízu. Při vytvoření sezení se automaticky vygeneruje šestimístný kód pro připojení a bezpečný hash pro URL adresu. Učitel je následně přesměrován do lobby, kde vidí kód pro připojení, seznam připojených studentů a přehled otázek v kvízu.
+
+Studenti se ke kvízu připojují zadáním šestimístného kódu na stránce „Připojit se ke kvízu“. Po zadání správného kódu jsou přesměrováni do lobby, kde čekají na spuštění kvízu učitelem. V lobby vidí název kvízu, kód pro připojení a seznam ostatních účastníků.
+
+\begin{figure}[h!]
+	\centering %% příkaz, který ti obrázek zarovná na střed
+	\includegraphics[width=1.2\textwidth]{image/ucZak.png} %% vložení samotného obrátku
+	\caption{Lobby z pohledu studenta a učitele před spuštěním kvízu.} %% popisek obrázku, nezapomeň na citace!
+	\label{fig:SpravaKvizu} %% označení až budeš chtít na obrázek odkazovat
+\end{figure}
+
+\subsection{Průběh kvízu během živého sezení, bodové hodnocení a žolíky}
+ 
+\subsubsection{Zobrazení otázky studentům}
+Po spuštění otázky učitelem se všem studentům zobrazí stránka s aktuální otázkou. Na obrazovce vidí text otázky, případně obrázek, a seznam možných odpovědí. Zároveň se zobrazuje odpočet času, který má student na odpověď. Student vybírá jednu z možností a svůj výběr potvrdí tlačítkem pro odeslání odpovědi.
+
+\begin{figure}[H]
+	\centering %% příkaz, který ti obrázek zarovná na střed
+	\includegraphics[width=0.65\textwidth]{image/nabidkaOdpovedi.png} %% vložení samotného obrátku
+	\caption{Nabídka odpovědí na otázku z pohledu studenta} %% popisek obrázku, nezapomeň na citace!
+	\label{fig:OsdpovediStudent} %% označení až budeš chtít na obrázek odkazovat
+\end{figure}
+
+\subsection{Odpovídání a bodové hodnocení}
+Po odeslání odpovědi zůstává student na stejné stránce. Systém uloží čas reakce od začátku otázky a podle něj vypočítá počet bodů. Pokud student odpoví špatně, získá 0 bodů. U správné odpovědi platí, že čím rychlejší odpověď, tím více bodů, maximálně až 1000~bodů. Pomalejší správné odpovědi získají méně bodů, minimálně 400. Student po odpovědi vidí body za aktuální otázku i své celkové skóre.
+
+\begin{figure}[H]
+	\centering %% příkaz, který ti obrázek zarovná na střed
+	\includegraphics[width=0.6\textwidth]{image/odpovedzak.png} %% vložení samotného obrátku
+	\caption{Stránka po odeslání odpovědi s pohledu studenta} %% popisek obrázku, nezapomeň na citace!
+	\label{fig:prubezneVysledky} %% označení až budeš chtít na obrázek odkazovat
+\end{figure}
+
+\subsection{Použití žolíků}
+Během odpovídání může student použít žolík, pokud ho má k dispozici. Počet žolíků je nastaven pro celý kvíz a pohybuje se v rozmezí 0–3. Po použití žolíku se smažou dvě náhodné špatné odpovědi, čímž se zjednoduší výběr správné možnosti. Žolík lze použít pouze jednou na otázku a jen před odesláním odpovědi. Po použití se zobrazí zbývající počet žolíků.
+
+\begin{figure}[H]
+	\centering %% příkaz, který ti obrázek zarovná na střed
+	\includegraphics[width=0.5\textwidth]{image/zolik.png} %% vložení samotného obrátku
+	\caption{Tlačítko na využití žolíka po jehož použití se odebere polovina špatných odpovědí} %% popisek obrázku, nezapomeň na citace!
+	\label{fig:zolik} %% označení až budeš chtít na obrázek odkazovat
+\end{figure}
+
+\subsection{Průběžné hodnocení a statistiky}
+Během kvízu má učitel přehled o tom, jak studenti odpovídají. Vidí, kolik studentů už odpovědělo, a postupně se mu aktualizuje stav odpovědí.
+
+Jakmile odpoví všichni studenti nebo vyprší časový limit, zobrazí se výsledky otázky. Učitel vidí průběžný žebříček podle bodů a také tabulku „Kdo jak odpověděl“, kde je u každého studenta uvedeno, zda odpověděl správně, špatně, nebo neodpověděl vůbec. Poté může učitel spustit další otázku a studenti jsou automaticky přesunuti dál.
+
+\begin{figure}[H]
+	\centering %% příkaz, který ti obrázek zarovná na střed
+	\includegraphics[width=0.8\textwidth]{image/prubezneUcitel.png} %% vložení samotného obrátku
+	\caption{Průběžné výsledky studentů z pohledu učitele} %% popisek obrázku, nezapomeň na citace!
+	\label{fig:prubezneUcitel} %% označení až budeš chtít na obrázek odkazovat
+\end{figure}
+
+\subsection{Výsledky a žebříček}
+Po dokončení všech otázek učitel klikne na tlačítko „Ukončit sezení“. Tím se všem účastníkům zobrazí finální výsledky kvízu. Na stránce je vidět pódium s prvními třemi místy a jejich celkovým počtem bodů. Pod ním je zobrazen celý žebříček všech studentů seřazený podle získaných bodů. Učitel si může výsledky stáhnout do souboru CSV. Po skončení kvízu se studentům mohou zobrazit také doplňující vzdělávací materiály.
+
+\begin{figure}[H]
+	\centering %% příkaz, který ti obrázek zarovná na střed
+	\includegraphics[width=0.8\textwidth]{image/vysledkyUcitel.png} %% vložení samotného obrátku
+	\caption{Výsledková listina z pohledu učitele} %% popisek obrázku, nezapomeň na citace!
+	\label{fig:vysledkyUcitell} %% označení až budeš chtít na obrázek odkazovat
+\end{figure}
+
+	
+	
+	\section{ Real-time aktualizace pomocí Socket.IO}
+		Pro živá kvízová sezení aplikace využívá technologii Socket.IO. Díky ní se informace během kvízu aktualizují v reálném čase bez nutnosti obnovovat stránku. Učitel i studenti tak okamžitě vidí změny, například průběh odpovídání, žebříček nebo stav aktuální otázky.
+	
+	\subsection{Architektura a implementace}
+	
+	Aplikace používá samostatný Socket.IO server, který běží odděleně od Django serveru. Django server odesílá informace o průběhu kvízu na Socket.IO server, který je následně rozesílá připojeným uživatelům.
+	
+	Každé živé sezení má svou vlastní „místnost“ (room). Do této místnosti se připojí učitel i~studenti daného kvízu. Díky tomu dostávají aktualizace pouze účastníci konkrétního sezení.
+	
+	Prohlížeče studentů i~učitele se k Socket.IO serveru připojují pomocí JavaScriptu. Ten naslouchá událostem ze serveru a automaticky aktualizuje obsah stránky. Jedná se například o~počty odpovědí, průběžný žebříček, tabulku účastníků nebo zbývající čas na odpověď. Změny se tak zobrazují okamžitě bez nutnosti ručního obnovení stránky.
+	
+	Server navíc každou sekundu odesílá aktualizace, aby měl učitel vždy aktuální přehled o~průběhu kvízu, i když studenti zrovna neodpovídají.
+	
+	\subsection{Fallback mechanismus}
+	V případě, že se nepodaří připojit k Socket.IO serveru nebo dojde k výpadku spojení, aplikace automaticky přepne na záložní řešení. V tomto režimu klient pravidelně získává aktuální stav kvízu pomocí AJAX dotazů na Django server.
+	
+	Tento mechanismus zajišťuje, že aplikace zůstane funkční i při problémech s real-time připojením. Aktualizace nejsou tak plynulé jako při použití Socket.IO, ale kvíz může bez problémů pokračovat.
+	
+	\section{Vzdělávací materiály přes Wagtail CMS}
+	Aplikace umožňuje učitelům vytvářet a spravovat vzdělávací materiály, které jsou propojené s~konkrétními kvízy. Ke správě těchto materiálů slouží redakční systém Wagtail CMS, který je součástí aplikace.
+	
+	Po přihlášení do aplikace se učitel dostane do administrační části kliknutím na tlačítko „Administrace“ v navigaci. V tomto rozhraní může vytvářet nové vzdělávací materiály nebo upravovat již existující a přiřazovat je ke konkrétním kvízům.
+	
+	U každého vzdělávacího materiálu učitel zadá jeho název, vybere kvíz, ke kterému se vztahuje, a zvolí typ materiálu, například text, video, externí odkaz nebo dokument. Zároveň nastaví, zda se má materiál studentům zobrazit před zahájením kvízu, po jeho skončení, nebo v obou případech. Po uložení a publikování je materiál dostupný studentům.
+	
+	Studentům se vzdělávací materiály zobrazují v přehledné podobě jako rozbalovací sekce. Vidí pouze ty materiály, které patří ke kvízu, kterého se účastní, a které jsou označeny jako publikované.
+
+	\begin{figure}[H]
+		\centering %% příkaz, který ti obrázek zarovná na střed
+		\includegraphics[width=0.7\textwidth]{image/vzdelavaciMaterial.png} %% vložení samotného obrátku
+		\caption{Vzdělávací materiál} %% popisek obrázku, nezapomeň na citace!
+		\label{fig:vzdelavaciMaterial} %% označení až budeš chtít na obrázek odkazovat
+	\end{figure}
+	
+	\section{Vizuální stránka aplikace}
+	
+	Aplikace je navržena jako plně responzivní, takže se přizpůsobuje různým velikostem obrazovek. Rozhraní je použitelné na počítačích, tabletech i mobilních telefonech. Pro menší zařízení jsou upraveny rozměry prvků, velikosti písma a navigace, aby byla aplikace přehledná a dobře ovladatelná.
+	
+	Součástí aplikace je také podpora světlého a tmavého režimu. Uživatel si může režim přepnout pomocí tlačítka v rozhraní a zvolený režim se uloží do prohlížeče, takže zůstane zachován i při dalším otevření aplikace. Barevné schéma je řešeno pomocí CSS proměnných, což zajišťuje jednotný vzhled celé aplikace.
+	
+	Styly aplikace byly optimalizovány pomocí znovupoužitelných CSS tříd a proměnných. Díky tomu se podařilo výrazně zmenšit velikost CSS souboru a zjednodušit jeho údržbu.
+	
+	\chapter{Výsledky řešení a výstupy}
+	
+	\section{Funkce aplikace}
+	
+	\subsection{Uživatelský průvodce pro učitele}
+	
+	Učitel se může do aplikace přihlásit nebo zaregistrovat buď klasicky pomocí e-mailu a hesla, nebo přes školní Microsoft účet. Po přihlášení má přístup ke všem funkcím pro správu kvízů.
+	
+	V sekci „Moje kvízy“ může vytvořit nový kvíz. Zadá jeho název, přidá otázky s možnými odpověďmi a označí správné možnosti. U každé otázky nastaví čas na odpověď v~rozmezí 5--300~sekund a také počet žolíků pro celý kvíz (0–3). Ke kvízu i jednotlivým otázkám může přidat obrázky.
+	
+	Ke kvízu může učitel připojit vzdělávací materiály. V administraci vytvoří materiál, například text, video, dokument nebo externí odkaz. Materiál pak přiřadí ke konkrétnímu kvízu a~nastaví, zda se má zobrazit studentům před kvízem, po kvízu, nebo v obou případech.
+	
+	Hotový kvíz může učitel spustit dvěma způsoby. Buď si ho spustí jen pro sebe v jednoduchém režimu, nebo vytvoří živé sezení pro studenty pomocí tlačítka „Start live“. Při živém sezení se vygeneruje unikátní kód, pomocí kterého se studenti připojí.
+	
+	Během kvízu učitel sleduje průběžné statistiky odpovědí, aktuální žebříček a přehled toho, kdo jak odpověděl. Po dokončení všech otázek ukončí sezení a všem účastníkům se zobrazí finální výsledky s pódiem. Výsledky si může stáhnout do CSV souboru pro další zpracování.
+	
+	\subsection{Uživatelský průvodce pro studenty}
+	Student se může do aplikace přihlásit nebo zaregistrovat klasicky, případně pomocí školního Microsoft účtu. Po přihlášení se dostane na hlavní stránku, kde zadá kód kvízu, který obdrží od učitele.
+	
+	Po zadání správného kódu se připojí do lobby. Zde vidí název kvízu, kód pro připojení a~seznam ostatních účastníků. Pokud učitel přidal vzdělávací materiál, student si ho může v~lobby otevřít a projít ještě před začátkem kvízu.
+	
+	Jakmile učitel spustí otázku, zobrazí se studentovi text otázky, případně obrázek, možnosti odpovědí a odpočet času. Student vybírá jednu odpověď a odešle ji. Pokud má k dispozici žolík, může ho během odpovídání použít ke zjednodušení výběru.
+	
+	Po odeslání odpovědi student vidí, kolik bodů za otázku získal, a také své celkové skóre. Po dokončení všech otázek se zobrazí finální výsledky s pódiem prvních tří míst a celkovým žebříčkem. Pokud jsou ke kvízu připojeny studijní materiály pro zobrazení po kvízu, student je zde může znovu otevřít.
+	
+	
+	\begin{figure}[h!]
+		\centering %% příkaz, který ti obrázek zarovná na střed
+		\includegraphics[width=0.9\textwidth]{image/diaWebc.png} %% vložení samotného obrátku
+		\caption{Struktura podstránekl} %% popisek obrázku, nezapomeň na citace!
+		\label{fig:webovastruktura} %% označení až budeš chtít na obrázek odkazovat
+	\end{figure}
+	
+	
+	\section{Splňené a nesplňené cíle}
+	Cílem práce bylo vytvořit funkční webovou aplikaci pro interaktivní kvízy a zároveň si při jejím vývoji osvojit a lépe pochopit principy a technologie, které byly v projektu použity. Většinu stanovených cílů se mi podařilo splnit a výsledná aplikace je funkční a použitelná. Přesto si uvědomuji, že kód není v některých částech napsaný zcela optimálně a do budoucna by bylo vhodné ho dále zpřehlednit a vylepšit.
+	
+	V současné době je možné si aplikaci vyzkoušet jejím naklonováním z mého veřejného GitHub repozitáře a spuštěním přiložených příkazů. Díky využití Dockeru je aplikaci možné spustit na zařízeních s různými operačními systémy.
+	
+	
+	\chapter*{Závěr}
+	
+Cílem práce bylo vytvořit webovou aplikaci pro interaktivní kvízy určenou pro školní prostředí. Aplikace slouží učitelům k tvorbě a správě kvízů a studentům k jejich vyplňování v reálném čase. Celé řešení je postaveno na frameworku Django a pro správu vzdělávacích materiálů využívá Wagtail CMS. Data jsou ukládána do databáze PostgreSQL a komunikace mezi uživateli probíhá pomocí technologie Socket.IO. Pro přihlašování uživatelů je použita autentizace přes Microsoft účet a aplikace je připravena ke spuštění pomocí Dockeru.
+
+Základem aplikace jsou kvízy, které může učitel vytvářet, upravovat a spouštět. Během živého kvízu mají učitelé přehled o průběžných výsledcích a pořadí účastníků. Studenti se ke kvízům připojují pomocí kódu a odpovídají na otázky přímo v prohlížeči. Body jsou udělovány podle správnosti a rychlosti odpovědi. Součástí aplikace je také možnost využívat žolíky a zobrazovat si studijní materiály před nebo po skončení kvízu.
+
+Aplikace je responzivní a lze ji používat na počítači i mobilním zařízení. Podporuje světlý i~tmavý režim a umožňuje export výsledků do souboru CSV. 
+
+Aplikace je zálohována a dostupná ve~veřejném GitHub repozitáři na~adrese:
+
+	\url{https://github.com/Stoklasavasek/Rocnikovy_Projekt}
+
+	\begin{thebibliography}{99}
+			\bibitem{djangoDocs} \textit{Django Documentation} [online]. Django Software Foundation, 2005- [cit. 2024-12-20]. Dostupné z: \url{https://docs.djangoproject.com/}
+			\bibitem{djangoTutorial} \textit{Django Tutorial} [online]. Django Software Foundation, 2005- [cit. 2024-12-20]. Dostupné z: \url{https://docs.djangoproject.com/en/stable/intro/tutorial01/}
+			\bibitem{djangoAllauth} \textit{django-allauth Documentation} [online]. [cit. 2024-12-20]. Dostupné z: \url{https://docs.allauth.org/}
+			\bibitem{socketIODocs} \textit{Socket.IO Documentation} [online]. Socket.IO, 2014- [cit. 2024-12-20]. Dostupné z: \url{https://socket.io/docs/v4/}
+			\bibitem{socketIOPython} \textit{python-socketio Documentation} [online]. [cit. 2024-12-20]. Dostupné z: \url{https://python-socketio.readthedocs.io/}
+			\bibitem{wagtailDocs} \textit{Wagtail CMS Documentation} [online]. Wagtail, 2014- [cit. 2024-12-20]. Dostupné z: \url{https://docs.wagtail.org/}
+			\bibitem{postgresqlDocs} \textit{PostgreSQL Documentation} [online]. PostgreSQL Global Development Group, 1996- [cit. 2024-12-20]. Dostupné z: \url{https://www.postgresql.org/docs/}
+			\bibitem{microsoftOAuth} \textit{Microsoft identity platform documentation} [online]. Microsoft, 2020- [cit. 2024-12-20]. Dostupné z: \url{https://learn.microsoft.com/en-us/entra/identity-platform/}
+			\bibitem{dockerDocs} \textit{Docker Documentation} [online]. Docker, Inc., 2013- [cit. 2024-12-20]. Dostupné z: \url{https://docs.docker.com/}
+			\bibitem{realPythonDjango} \textit{Real Python - Django Tutorials} [online]. Real Python, 2012- [cit. 2024-12-20]. Dostupné z: \url{https://realpython.com/tutorials/django/}
+			\bibitem{w3schools} \textit{W3Schools Online Web Tutorials} [online]. W3Schools, 1998- [cit. 2024-12-20]. Dostupné z: \url{https://www.w3schools.com/}
+			\bibitem{mdnWebDocs} \textit{MDN Web Docs} [online]. Mozilla Foundation, 2005- [cit. 2024-12-20]. Dostupné z: \url{https://developer.mozilla.org/}
+			\bibitem{stackOverflow} \textit{Stack Overflow} [online]. Stack Exchange, 2008- [cit. 2024-12-20]. Dostupné z: \url{https://stackoverflow.com/}
+	\end{thebibliography}
+	
+\end{document}

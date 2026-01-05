@@ -3,6 +3,18 @@ Management command pro opravu Wagtail oprávnění u učitelů.
 
 Tento command přiřadí učitelům oprávnění k přístupu do Wagtail adminu
 a k editaci stránek.
+
+Použití:
+    python manage.py fix_wagtail_permissions
+
+Použijte tento command, pokud:
+- Učitelé nemohou přistupovat do Wagtail adminu
+- Učitelé nemohou nahrávat dokumenty (videa, PDF)
+- Menu "Dokumenty" se nezobrazuje v Wagtail adminu
+
+Note:
+    Oprávnění se automaticky přiřazují při migraci přes signály,
+    tento command slouží jako záložní řešení pro opravu existujících uživatelů.
 """
 from django.core.management.base import BaseCommand
 from django.contrib.auth.models import User, Group as DjangoGroup, Permission

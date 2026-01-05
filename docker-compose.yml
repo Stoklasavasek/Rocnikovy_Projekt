@@ -1,10 +1,15 @@
+# Docker Compose konfigurace pro QuizIT! aplikaci
+# Obsahuje: PostgreSQL databázi, Django aplikaci + Socket.IO server
+
 services:
+  # PostgreSQL databáze pro ukládání dat aplikace
   db:
     image: postgres:16
     container_name: kahoot_postgres
     restart: unless-stopped
     environment:
       # Základní konfigurace databáze pro vývoj / demo.
+      # V produkci změňte hesla a použijte secrets!
       POSTGRES_DB: kahoot
       POSTGRES_USER: kahoot_user
       POSTGRES_PASSWORD: kahoot_password
@@ -20,13 +25,14 @@ services:
       timeout: 5s
       retries: 5
 
+  # Django aplikace + Socket.IO server v jednom kontejneru
   web:
     build: .
     container_name: kahoot_app
     restart: unless-stopped
     ports:
-      - "8000:8000"  # Django (Gunicorn)
-      - "8001:8001"  # Socket.IO server
+      - "8000:8000"  # Django (Gunicorn) - hlavní webová aplikace
+      - "8001:8001"  # Socket.IO server - real-time komunikace pro živé kvízy
     depends_on:
       db:
         condition: service_healthy

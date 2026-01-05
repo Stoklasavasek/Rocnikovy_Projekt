@@ -412,8 +412,20 @@ def join_quiz_by_code(request):
 
 
 @login_required
+@login_required
 def quiz_create(request):
-    """Vytvoření nového kvízu v jednom formuláři (pouze učitelé)."""
+    """
+    Vytvoření nového kvízu v jednom formuláři (pouze učitelé).
+    
+    Učitel může vytvořit kvíz s názvem, počtem žolíků (0-3) a otázkami.
+    Každá otázka může mít text, obrázek, čas na odpověď (5-300s) a až 10 odpovědí.
+    
+    GET: Zobrazí formulář pro vytvoření kvízu
+    POST: Zpracuje formulář a vytvoří kvíz s otázkami
+    
+    Returns:
+        Redirect na seznam kvízů po úspěšném vytvoření
+    """
     # Kontrola, zda je uživatel učitel
     if not user_is_teacher(request.user):
         messages.error(request, "Pouze učitelé mohou vytvářet kvízy.")
@@ -447,7 +459,21 @@ def quiz_create(request):
 
 @login_required
 def quiz_update(request, quiz_id):
-    """Úprava existujícího kvízu."""
+    """
+    Úprava existujícího kvízu.
+    
+    Učitel může upravit název kvízu, počet žolíků a všechny otázky.
+    Při úpravě se všechny stávající otázky smažou a vytvoří se nové podle POST dat.
+    
+    GET: Zobrazí formulář s aktuálními daty kvízu
+    POST: Zpracuje formulář a aktualizuje kvíz
+    
+    Args:
+        quiz_id: ID kvízu k úpravě
+        
+    Returns:
+        Redirect na seznam kvízů po úspěšné úpravě
+    """
     quiz = get_object_or_404(Quiz, id=quiz_id, created_by=request.user)
     
     if request.method == "POST":
@@ -484,7 +510,21 @@ def quiz_update(request, quiz_id):
 
 @login_required
 def quiz_delete(request, quiz_id):
-    """Smazání kvízu."""
+    """
+    Smazání kvízu.
+    
+    Učitel může smazat svůj kvíz. Smazání je nevratné - smažou se i všechny
+    související otázky, odpovědi a sezení.
+    
+    GET: Zobrazí potvrzovací stránku
+    POST: Smaže kvíz a přesměruje na seznam kvízů
+    
+    Args:
+        quiz_id: ID kvízu ke smazání
+        
+    Returns:
+        Redirect na seznam kvízů po smazání
+    """
     quiz = get_object_or_404(Quiz, id=quiz_id, created_by=request.user)
     if request.method == "POST":
         quiz.delete()
@@ -577,7 +617,19 @@ def session_lobby(request, hash):
 
 @login_required
 def session_start_question(request, hash, order):
-    """Spustí konkrétní otázku v živém sezení (pouze učitel)."""
+    """
+    Spustí konkrétní otázku v živém sezení (pouze učitel).
+    
+    Nastaví starts_at a ends_at pro QuestionRun a odešle aktualizace všem klientům
+    přes Socket.IO. Studenti uvidí otázku na svých obrazovkách.
+    
+    Args:
+        hash: Hash sezení pro identifikaci
+        order: Pořadí otázky v sezení
+        
+    Returns:
+        Redirect na stránku s otázkou pro učitele
+    """
     session = get_object_or_404(QuizSession, hash=hash, host=request.user, is_active=True)
     qrun = get_object_or_404(QuestionRun, session=session, order=order)
     qrun.start_now()
@@ -844,7 +896,18 @@ def session_question_view(request, hash, order):
 
 @login_required
 def session_current_question(request, hash):
-    """Přesměrování na aktuálně běžící otázku."""
+    """
+    Přesměrování na aktuálně běžící otázku.
+    
+    Najde aktuálně běžící otázku v sezení a přesměruje na ni.
+    Pokud žádná otázka neběží, přesměruje do lobby.
+    
+    Args:
+        hash: Hash sezení pro identifikaci
+        
+    Returns:
+        Redirect na stránku s otázkou nebo do lobby
+    """
     session = get_object_or_404(QuizSession, hash=hash, is_active=True)
     current = _get_current_question_run(session)
     
@@ -944,7 +1007,18 @@ def session_status(request, hash):
 
 @login_required
 def session_finish(request, hash):
-    """Ukončení živého sezení."""
+    """
+    Ukončení živého sezení (pouze učitel).
+    
+    Nastaví is_active=False a finished_at na aktuální čas.
+    Odešle aktualizaci všem klientům přes Socket.IO a přesměruje na výsledky.
+    
+    Args:
+        hash: Hash sezení pro identifikaci
+        
+    Returns:
+        Redirect na stránku s výsledky sezení
+    """
     session = get_object_or_404(QuizSession, hash=hash, host=request.user)
     session.is_active = False
     session.finished_at = timezone.now()

@@ -6,6 +6,10 @@ Definuje všechny URL cesty pro:
 - Živá sezení (lobby, otázky, odpovědi, výsledky)
 - Autentizaci (allauth)
 - Admin rozhraní (Django admin a Wagtail)
+
+Důležité:
+- Wagtail URL musí být na konci, aby nezachytávaly ostatní cesty
+- V DEBUG režimu se automaticky přidají cesty pro statické soubory a média
 """
 from django.conf import settings
 from django.urls import include, path

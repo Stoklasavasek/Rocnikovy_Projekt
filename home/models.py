@@ -98,8 +98,13 @@ class EducationalMaterial(Page):
     ]
     
     def clean(self):
-        """Validace materiálu."""
-        # Validace není potřeba, ForeignKey to řeší automaticky
+        """
+        Validace materiálu.
+        
+        Note:
+            Validace není potřeba, ForeignKey to řeší automaticky.
+            Tato metoda je zde pro případné budoucí rozšíření validace.
+        """
         pass
     
     def get_related_quiz(self):

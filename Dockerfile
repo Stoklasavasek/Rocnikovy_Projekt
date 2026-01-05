@@ -1,6 +1,9 @@
+# Dockerfile pro QuizIT! aplikaci
+# Vytváří image s Django aplikací a Socket.IO serverem
+
 FROM python:3.12-slim-bookworm
 
-# V kontejneru používáme neprivilegovaného uživatele "wagtail".
+# V kontejneru používáme neprivilegovaného uživatele "wagtail" pro bezpečnost.
 RUN useradd wagtail
 
 # Výchozí port pro Django / Gunicorn.
@@ -13,6 +16,10 @@ ENV PYTHONUNBUFFERED=1 \
     PORT=8000
 
 # Systemové balíčky potřebné pro Django, Wagtail a nástroje kolem Graphvizu.
+# build-essential: kompilátory pro Python balíčky s C extensiony
+# libpq-dev: PostgreSQL klient
+# libjpeg62-turbo-dev, zlib1g-dev, libwebp-dev: podpora pro obrázky (Pillow)
+# graphviz: generování ER diagramů
 RUN apt-get update --yes --quiet && apt-get install --yes --quiet --no-install-recommends \
     build-essential \
     libpq-dev \
