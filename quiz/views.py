@@ -209,17 +209,27 @@ def _get_or_create_participant(session, user):
     """
     Vytvoří nebo vrátí Participant objekt pro uživatele v sezení.
     
-    Pokud participant již existuje, vrátí existující.
-    Pokud ne, vytvoří nový s display_name = username.
+    Pokud participant již existuje, aktualizuje display_name pokud se změnilo.
+    Pokud ne, vytvoří nový s display_name = first_name nebo username.
     
     Returns:
         Seznam 2 hodnot:
         - participant: Participant objekt (existující nebo nově vytvořený)
         - created: True pokud byl participant právě vytvořen, jinak False
     """
-    return Participant.objects.get_or_create(
-        session=session, user=user, defaults={"display_name": user.username}
+    # Použijeme first_name pokud je vyplněno, jinak username
+    display_name = user.first_name or user.username
+    
+    participant, created = Participant.objects.get_or_create(
+        session=session, user=user, defaults={"display_name": display_name}
     )
+    
+    # Aktualizujeme display_name i pro existující participant, pokud se změnilo
+    if not created and participant.display_name != display_name:
+        participant.display_name = display_name
+        participant.save(update_fields=["display_name"])
+    
+    return participant, created
 
 
 def _get_educational_materials(quiz_id, show_before=False, show_after=False):
@@ -408,6 +418,12 @@ def join_quiz_by_code(request):
         return redirect("quiz_join")
     
     # Zobrazení formuláře
+    # Vymažeme všechny staré messages při GET požadavku, aby se nezobrazovaly messages z přihlášení/registrace
+    # Messages se automaticky vymažou po přečtení, ale pro jistotu je všechny projdeme
+    storage = messages.get_messages(request)
+    # Projdeme všechny messages a označíme je jako "consumed" (automaticky se vymažou)
+    list(storage)
+    
     return render(request, "quiz/join.html")
 
 
@@ -604,7 +620,11 @@ def session_lobby(request, hash):
     participant = None
     educational_materials_before = []
     if not is_host:
-        participant, _ = _get_or_create_participant(session, request.user)
+        participant, created = _get_or_create_participant(session, request.user)
+        # Pokud byl participant právě vytvořen, pošleme aktualizaci přes Socket.IO
+        if created:
+            from .socketio_handler import send_session_status
+            send_session_status(session.hash)
         educational_materials_before = _get_educational_materials(session.quiz.id, show_before=True)
     
     return render(request, "quiz/session_lobby.html", {
@@ -1002,7 +1022,13 @@ def session_status(request, hash):
         return JsonResponse(response_data)
     
     # Čeká se na spuštění otázky
-    return JsonResponse({"state": "waiting", "total_participants": total_participants})
+    # Pro studenty vracíme také seznam účastníků pro real-time aktualizaci
+    participants_list = [{"id": p.id, "name": p.display_name} for p in session.participants.all()]
+    return JsonResponse({
+        "state": "waiting", 
+        "total_participants": total_participants,
+        "participants": participants_list
+    })
 
 
 @login_required

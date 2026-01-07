@@ -108,7 +108,9 @@ table { width: 100%; border-collapse: separate; border-spacing: 0; border: 1px s
 /* ===== QUIZ STYLES ===== */
 .quiz-container { max-width: 900px; margin: 24px auto; padding: 24px; background: var(--card); border-radius: 20px; box-shadow: var(--shadow-lg); }
 .quiz-title { font-size: clamp(24px, 5vw, 36px); margin-bottom: 12px; font-weight: 700; background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-.quiz-question { font-size: clamp(18px, 4vw, 26px); margin-bottom: 24px; color: var(--fg); font-weight: 600; line-height: 1.4; }
+.quiz-question { margin-bottom: 24px; color: var(--fg); display: flex; align-items: center; justify-content: center; position: relative; min-height: 60px; }
+.question-number { position: absolute; left: 0; font-size: clamp(16px, 3vw, 22px); font-weight: 600; }
+.question-text { text-align: center !important; font-size: clamp(48px, 10vw, 72px) !important; font-weight: 700 !important; margin: 0 auto !important; }
 
 /* ===== ANSWER STYLES ===== */
 .answer-item { margin: 16px 0; padding: 20px; border-radius: 12px; transition: all 0.3s; position: relative; overflow: hidden; background: var(--card); color: var(--fg); border: 1px solid var(--border); }

@@ -71,47 +71,29 @@
       <p>Jakmile učitel spustí otázku, budete automaticky přesměrováni.</p>
     </div>
     
-    {# JavaScript pro real-time aktualizace pomocí Socket.IO s fallbackem na AJAX #}
+    {# JavaScript pro automatickou aktualizaci počtu účastníků (stejně jako u učitele) #}
     <script>
       (function() {
         const hash = "{{ session.hash }}";
         const statusUrl = "{% url 'session_status' session.hash %}";
         const resultsUrl = "{% url 'session_results' session.hash %}";
+        let lastCount = {{ session.participants.count }};
         
-        {# Fallback funkce pro AJAX polling (když Socket.IO není dostupné) #}
-        function createFallback() {
-          return setInterval(async () => {
-            try {
-              const res = await fetch(statusUrl, {headers: {'X-Requested-With': 'XMLHttpRequest'}});
-              if (res.ok) {
-                const data = await res.json();
-                if (data.state === 'finished') {
-                  clearInterval(this);
-                  window.location.href = resultsUrl;
-                } else if (data.state === 'question' && data.order !== undefined) {
-                  clearInterval(this);
-                  window.location.href = "/session/" + hash + "/q/" + data.order + "/";
-                }
+        setInterval(async () => {
+          try {
+            const res = await fetch(statusUrl, {headers: {'X-Requested-With': 'XMLHttpRequest'}});
+            if (res.ok) {
+              const data = await res.json();
+              if (data.state === 'finished') {
+                window.location.href = resultsUrl;
+              } else if (data.state === 'question' && data.order !== undefined) {
+                window.location.href = "/session/" + hash + "/q/" + data.order + "/";
+              } else if (data.total_participants !== undefined && data.total_participants !== lastCount) {
+                location.reload();
               }
-            } catch (e) {}
-          }, 2000);
-        }
-        
-        {# Inicializace Socket.IO pro real-time komunikaci #}
-        function initSocketIO() {
-          if (typeof io === 'undefined') {
-            setTimeout(initSocketIO, 100);
-            return;
-          }
-          const socket = io('http://localhost:8001', {transports: ['websocket', 'polling'], reconnection: true, reconnectionDelay: 1000, reconnectionAttempts: 5});
-          socket.on('connect', () => socket.emit('join_session', {hash: hash}));
-          socket.on('disconnect', createFallback);
-          socket.on('session_state', (data) => {
-            if (data.state === 'finished') window.location.href = resultsUrl;
-            else if (data.state === 'question' && data.order !== undefined) window.location.href = "/session/" + hash + "/q/" + data.order + "/";
-          });
-        }
-        (document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', initSocketIO) : initSocketIO());
+            }
+          } catch (e) {}
+        }, 2000);
       })();
     </script>
     

@@ -7,15 +7,21 @@
 {% block content %}
 <div class="container join-container">
   <h1 class="join-title">Připojit se ke kvízu</h1>
-  {# Zobrazení chybových nebo informačních zpráv #}
+  {# Zobrazení chybových zpráv - pouze error messages související s připojením ke kvízu #}
   {% if messages %}
-  <div class="card pad message-box">
-    <ul>
-      {% for message in messages %}
-        <li>{{ message }}</li>
-      {% endfor %}
-    </ul>
-  </div>
+    {% for message in messages %}
+      {% if message.level == 40 and message.message and message.message|striptags|length > 0 %}
+        {% if forloop.first %}
+          <div class="card pad message-box">
+            <ul>
+        {% endif %}
+              <li>{{ message }}</li>
+        {% if forloop.last %}
+            </ul>
+          </div>
+        {% endif %}
+      {% endif %}
+    {% endfor %}
   {% endif %}
   {# Formulář pro zadání kódu kvízu #}
   <div class="card pad">

@@ -9,7 +9,7 @@
       <img src="{{ qrun.question.image.url }}" alt="Obrázek k otázce">
     </div>
   {% endif %}
-  <h2 class="quiz-question">Otázka {{ qrun.order }}: {{ qrun.question.text }}</h2>
+  <h2 class="quiz-question"><span class="question-number">Otázka {{ qrun.order }}/{{ session.question_runs.count }}</span><span class="question-text">{{ qrun.question.text }}</span></h2>
   {% if remaining %}
     <p class="timer-display">Zbývající čas: <span class="remaining-time">{{ remaining }}</span> s</p>
   {% endif %}

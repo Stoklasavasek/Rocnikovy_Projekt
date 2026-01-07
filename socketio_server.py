@@ -127,7 +127,13 @@ def send_session_status(session_hash):
         if current:
             sio.emit('session_state', {'state': 'question', 'order': current.order}, room=room_name)
         else:
-            sio.emit('session_state', {'state': 'waiting'}, room=room_name)
+            # Při čekání pošleme také seznam účastníků pro aktualizaci
+            participants_list = [{"id": p.id, "name": p.display_name} for p in session.participants.all()]
+            sio.emit('session_state', {
+                'state': 'waiting',
+                'total_participants': session.participants.count(),
+                'participants': participants_list
+            }, room=room_name)
     except QuizSession.DoesNotExist:
         pass
 
