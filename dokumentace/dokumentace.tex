@@ -426,7 +426,7 @@ openright
 %Třetí parametr Úvod je text, který se objeví v obsahu. V tomto případě bude v obsahu zobrazen název "Úvod".	
 Z~vlastní zkušenosti mohu říct, že kvízy patří ve~výuce mezi nejoblíbenější formy ověřování znalostí. Studenti se do~nich většinou zapojují více než při klasickém zkoušení. Písemné testy a~ústní zkoušení často neposkytují okamžitou zpětnou vazbu a ne vždy zaujmou všechny studenty. Interaktivní kvízové aplikace tento problém řeší. Spojují výuku s herními prvky a zvyšují motivaci studentů. Zároveň učitelům umožňují rychle získat přehled o znalostech celé třídy. Proto se v posledních letech ve školách používají stále častěji.
 
-Cílem této práce bylo vytvořit webovou aplikaci QuizIT! pro~interaktivní kvízy, která je~snadno použitelná ve~školním prostředí. Aplikace umožňuje učitelům vytvářet vlastní kvízy s~otázkami a odpověďmi a spouštět živá kvízová sezení. Studenti se do těchto sezení připojují pomocí unikátního kódu a odpovídají na otázky v reálném čase. Hodnocení je založeno na~správnosti odpovědi i rychlosti reakce. Součástí aplikace je systém žolíků, průběžný žebříček a~aktualizace výsledků v reálném čase pomocí technologie Socket.IO. Pro zvýšení efektivity výuky aplikace umožňuje vytvářet vzdělávací materiály prostřednictvím systému Wagtail CMS. Aplikace je~postavena na frameworku Django, využívá databázi PostgreSQL a autentizaci pomocí Microsoft OAuth. Celá webová stránka je navržena jako plně responzivní a podporuje světlý i tmavý režim.
+Cílem této práce bylo vytvořit webovou aplikaci QuizIT! pro~interaktivní kvízy, která je snadno použitelná ve~školním prostředí. Aplikace umožňuje učitelům vytvářet vlastní kvízy s~otázkami a odpověďmi a spouštět živá kvízová sezení. Studenti se do těchto sezení připojují pomocí unikátního kódu a odpovídají na otázky v reálném čase. Hodnocení je založeno na~správnosti odpovědi i rychlosti reakce. Součástí aplikace je systém žolíků, průběžný žebříček a~aktualizace výsledků v reálném čase pomocí technologie Socket.IO. Pro zvýšení efektivity výuky aplikace umožňuje vytvářet vzdělávací materiály prostřednictvím systému Wagtail CMS. Aplikace je~postavena na frameworku Django, využívá databázi PostgreSQL a autentizaci pomocí Microsoft OAuth. Celá webová stránka je navržena jako plně responzivní a podporuje světlý i tmavý režim.
 
 V dokumentaci projektu popisuji postup vytvoření této aplikace. Nejprve se věnuji návrhu databázového modelu a architektuře systému. Následně řeším autentizaci uživatelů, tvorbu a~správu kvízů a realizaci živých kvízových sezení. Dále se zaměřuji na integraci systému Wagtail CMS pro správu vzdělávacích materiálů. V závěru se věnuji vizuální stránce aplikace a její responzivitě.
 %Tipy k psaní úvodu
@@ -563,7 +563,7 @@ Pro tuto funkci jsem vytvořil aplikaci v prostředí Microsoft Entra ID a získ
 	\label{fig:loginAregistr} %% označení až budeš chtít na obrázek odkazovat
 \end{figure}
 
-
+\newpage
 \subsection{Systém rolí a oprávnění}
 Aplikace rozlišuje tři role: admina, učitele a student. Systém je založen na Django skupinách, přičemž skupiny „Teacher“ a „Student“ jsou v aplikaci předem definovány. Noví uživatelé jsou při registraci automaticky zařazeni do skupiny „Student“.
 
@@ -606,10 +606,13 @@ Zároveň je zde možné vytvořit nový kvíz, spustit kvíz pro sebe v jednodu
 	\label{fig:SpravaKvizu} %% označení až budeš chtít na obrázek odkazovat
 \end{figure}
 
+\newpage
+\vspace*{100pt}
 \subsection{Vytváření sezení a připojování studentů}
 Učitel vytvoří živé sezení kliknutím na tlačítko „Start live“ u vybraného kvízu. Při vytvoření sezení se automaticky vygeneruje šestimístný kód pro připojení a bezpečný hash pro URL adresu. Učitel je následně přesměrován do lobby, kde vidí kód pro připojení, seznam připojených studentů a přehled otázek v kvízu.
 
-Studenti se ke kvízu připojují zadáním šestimístného kódu na stránce „Připojit se ke kvízu“. Po zadání správného kódu jsou přesměrováni do lobby, kde čekají na spuštění kvízu učitelem. V lobby vidí název kvízu, kód pro připojení a seznam ostatních účastníků.
+Studenti se ke kvízu připojují zadáním šestimístného kódu na stránce „Připojit se ke kvízu“. Po zadání správného kódu jsou přesměrováni do lobby, kde čekají na spuštění kvízu učitelem. V lobby vidí název kvízu, kód pro připojení a seznam ostatních účastníků
+\vspace*{80pt}.
 
 \begin{figure}[h!]
 	\centering %% příkaz, který ti obrázek zarovná na střed
@@ -617,7 +620,7 @@ Studenti se ke kvízu připojují zadáním šestimístného kódu na stránce �
 	\caption{Lobby z pohledu studenta a učitele před spuštěním kvízu.} %% popisek obrázku, nezapomeň na citace!
 	\label{fig:SpravaKvizu} %% označení až budeš chtít na obrázek odkazovat
 \end{figure}
-
+\newpage
 \subsection{Průběh kvízu během živého sezení, bodové hodnocení a žolíky}
  
 \subsubsection{Zobrazení otázky studentům}
@@ -629,7 +632,7 @@ Po spuštění otázky učitelem se všem studentům zobrazí stránka s aktuál
 	\caption{Nabídka odpovědí na otázku z pohledu studenta} %% popisek obrázku, nezapomeň na citace!
 	\label{fig:Odpovědi Student} %% označení až budeš chtít na obrázek odkazovat
 \end{figure}
-
+\newpage
 \subsection{Odpovídání a bodové hodnocení}
 Po odeslání odpovědi zůstává student na stejné stránce. Systém uloží čas reakce od začátku otázky a podle něj vypočítá počet bodů. Pokud student odpoví špatně, získá 0 bodů. U správné odpovědi platí, že čím rychlejší odpověď, tím více bodů, maximálně až 1000~bodů. Pomalejší správné odpovědi získají méně bodů, minimálně 400. Student po odpovědi vidí body za aktuální otázku i své celkové skóre.
 
@@ -645,7 +648,7 @@ Během odpovídání může student použít žolík, pokud ho má k dispozici. 
 
 \begin{figure}[H]
 	\centering %% příkaz, který ti obrázek zarovná na střed
-	\includegraphics[width=0.5\textwidth]{image/zolik.png} %% vložení samotného obrátku
+	\includegraphics[width=0.3\textwidth]{image/zolik.png} %% vložení samotného obrátku
 	\caption{Tlačítko na využití žolíka po jehož použití se odebere polovina špatných odpovědí} %% popisek obrázku, nezapomeň na citace!
 	\label{fig:zolik} %% označení až budeš chtít na obrázek odkazovat
 \end{figure}
@@ -661,7 +664,7 @@ Jakmile odpoví všichni studenti nebo vyprší časový limit, zobrazí se výs
 	\caption{Průběžné výsledky studentů z pohledu učitele} %% popisek obrázku, nezapomeň na citace!
 	\label{fig:prubezneUcitel} %% označení až budeš chtít na obrázek odkazovat
 \end{figure}
-
+\newpage
 \subsection{Výsledky a žebříček}
 Po dokončení všech otázek učitel klikne na tlačítko „Ukončit sezení“. Tím se všem účastníkům zobrazí finální výsledky kvízu. Na stránce je vidět pódium s prvními třemi místy a jejich celkovým počtem bodů. Pod ním je zobrazen celý žebříček všech studentů seřazený podle získaných bodů. Učitel si může výsledky stáhnout do souboru CSV. Po skončení kvízu se studentům mohou zobrazit také doplňující vzdělávací materiály.
 
@@ -700,6 +703,7 @@ Po dokončení všech otázek učitel klikne na tlačítko „Ukončit sezení�
 	U každého vzdělávacího materiálu učitel zadá jeho název, vybere kvíz, ke kterému se vztahuje, a zvolí typ materiálu, například text, video, externí odkaz nebo dokument. Zároveň nastaví, zda se má materiál studentům zobrazit před zahájením kvízu, po jeho skončení, nebo v obou případech. Po uložení a publikování je materiál dostupný studentům.
 	
 	Studentům se vzdělávací materiály zobrazují v přehledné podobě jako rozbalovací sekce. Vidí pouze ty materiály, které patří ke kvízu, kterého se účastní, a které jsou označeny jako publikované.
+	\newpage
 
 	\begin{figure}[H]
 		\centering %% příkaz, který ti obrázek zarovná na střed
@@ -767,7 +771,7 @@ Aplikace je responzivní a lze ji používat na počítači i mobilním zaříze
 Aplikace je zálohována a dostupná ve~veřejném GitHub repozitáři na~adrese:
 
 	\url{https://github.com/Stoklasavasek/Rocnikovy_Projekt}
-	\renewcommand{\bibname}{Seznam použitých informačních zdroj}
+	\renewcommand{\bibname}{Seznam použitých informačních zdrojů}
 	\begin{thebibliography}{99}
 			\bibitem{djangoDocs} \textit{Django Documentation} [online]. Django Software Foundation, 2005- [cit. 2024-12-20]. Dostupné z: \url{https://docs.djangoproject.com/}
 			\bibitem{djangoTutorial} \textit{Django Tutorial} [online]. Django Software Foundation, 2005- [cit. 2024-12-20]. Dostupné z: \url{https://docs.djangoproject.com/en/stable/intro/tutorial01/}
