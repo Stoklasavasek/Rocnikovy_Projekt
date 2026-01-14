@@ -1,4 +1,5 @@
-QuizIT! – Django + Wagtail + Docker
+QuizIT!
+– Django + Wagtail + Docker
 
 📺 Videoprezentace: [YouTube video k projektu](https://www.youtube.com/watch?v=_vaSvGkfJBQ)
 
