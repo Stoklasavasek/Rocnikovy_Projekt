@@ -1,6 +1,6 @@
 QuizIT! – Django + Wagtail + Docker
 
-📺 Videoprezentace: YouTube video k projektu
+📺 Videoprezentace: [YouTube video k projektu](https://www.youtube.com/watch?v=_vaSvGkfJBQ)
 
 Webová aplikace pro interaktivní kvízy ve stylu Kahoot pro školy.
 Učitel vytváří kvízy, otázky a odpovědi, studenti se připojují kódem a odpovídají v reálném čase. Výsledky vidí jak studenti, tak učitel (průběžné i finální hodnocení).
