@@ -2,16 +2,18 @@
 {# Šablona pro potvrzení odhlášení uživatele #}
 
 {% block content %}
-<div class="container">
-  <div class="card pad auth-container">
-    <h2 class="auth-form-title">Odhlášení</h2>
-    <p>Opravdu se chceš odhlásit?</p>
-    {# Formulář pro odhlášení #}
-    <form method="post" action="{% url 'account_logout' %}" class="auth-form-actions">
-      {% csrf_token %}
-      <button class="btn primary" type="submit">Odhlásit</button>
-      <a class="btn" href="/">Zrušit</a>
-    </form>
+<div class="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-md w-full">
+    <div class="card-modern text-center">
+      <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">Odhlášení</h2>
+      <p class="text-gray-600 dark:text-gray-400 mb-8">Opravdu se chceš odhlásit?</p>
+      {# Formulář pro odhlášení #}
+      <form method="post" action="{% url 'account_logout' %}" class="flex flex-col gap-4">
+        {% csrf_token %}
+        <button class="btn-primary w-full py-3" type="submit">Odhlásit</button>
+        <a class="btn-secondary w-full text-center py-3" href="/">Zrušit</a>
+      </form>
+    </div>
   </div>
 </div>
 {% endblock %}

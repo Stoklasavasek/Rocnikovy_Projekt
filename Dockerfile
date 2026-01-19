@@ -12,8 +12,12 @@ EXPOSE 8000
 # Základní proměnné prostředí:
 # - PYTHONUNBUFFERED: okamžitý výpis logů do STDOUT,
 # - PORT: port, na kterém běží Gunicorn (musí souhlasit s EXPOSE).
+# - Cross-platform kompatibilita
 ENV PYTHONUNBUFFERED=1 \
-    PORT=8000
+    PORT=8000 \
+    PYTHONIOENCODING=utf-8 \
+    LANG=C.UTF-8 \
+    LC_ALL=C.UTF-8
 
 # Systemové balíčky potřebné pro Django, Wagtail a nástroje kolem Graphvizu.
 # build-essential: kompilátory pro Python balíčky s C extensiony
@@ -33,9 +37,9 @@ RUN apt-get update --yes --quiet && apt-get install --yes --quiet --no-install-r
 # Aplikační server – Gunicorn.
 RUN pip install "gunicorn==20.0.4"
 
-# Závislosti projektu.
+# Závislosti projektu - optimalizace: kopírujeme jen requirements.txt pro lepší cache
 COPY requirements.txt /
-RUN pip install -r /requirements.txt
+RUN pip install --no-cache-dir -r /requirements.txt
 
 # `/app` je kořen projektu uvnitř kontejneru.
 WORKDIR /app

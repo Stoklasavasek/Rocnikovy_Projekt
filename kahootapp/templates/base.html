@@ -23,77 +23,222 @@
         <base target="_blank">
         {% endif %}
 
-        {# Global stylesheets #}
+        {# Tailwind CSS #}
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script>
+          tailwind.config = {
+            darkMode: 'class',
+            theme: {
+              extend: {
+                colors: {
+                  primary: {
+                    DEFAULT: '#6366f1',
+                    dark: '#4f46e5',
+                  }
+                }
+              }
+            }
+          }
+        </script>
+        {# AGGRESIVE TABLE HEADER FIX - musí být hned po Tailwind #}
+        <style>
+          /* Přepisuje všechny Tailwind styly pro nadpisy tabulek - ČERNÉ POZADÍ, BÍLÝ TEXT */
+          thead th,
+          table thead th,
+          .min-w-full thead th,
+          table.min-w-full thead th,
+          thead th[class*="text-"],
+          thead th[class*="gray"],
+          .results-table thead th,
+          table.results-table thead th,
+          .table-header-row th {
+            background: #000000 !important;
+            color: #ffffff !important;
+            font-weight: 700 !important;
+          }
+        </style>
+        {# Global stylesheets - optimalizované (DRY princip) #}
         <link rel="stylesheet" type="text/css" href="{% static 'css/kahootapp.css' %}">
+        <link rel="stylesheet" type="text/css" href="{% static 'css/components.css' %}">
+        <link rel="stylesheet" type="text/css" href="{% static 'css/animations.css' %}">
+        <link rel="stylesheet" type="text/css" href="{% static 'css/fixes.css' %}">
+        <link rel="stylesheet" type="text/css" href="{% static 'css/table-fixes.css' %}">
 
         {% block extra_css %}
         {# Override this in templates to add extra stylesheets #}
         {% endblock %}
     </head>
 
-    <body class="{% block body_class %}{% endblock %}">
+    <body class="{% block body_class %}{% endblock %} bg-gradient-to-br from-gray-50 via-indigo-50/30 to-purple-50/30 dark:from-gray-900 dark:via-indigo-900/20 dark:to-purple-900/20 min-h-screen transition-colors duration-300" style="min-height: 100vh !important; padding-bottom: 0 !important; margin-bottom: 0 !important; background-attachment: fixed !important;">
         {# Hlavička stránky s logem a navigací #}
-        <header class="main-header">
-            <div>
-                {# Logo aplikace - odkaz na úvodní stránku #}
-                <a href="/" class="logo-link">
-                    <img src="{% static 'img/Transpa16.90.png' %}" alt="QuizIT!" class="logo-img">
-                </a>
-            </div>
-            {# Tlačítko pro mobilní menu (zobrazí se pouze na malých obrazovkách) #}
-            <button class="mobile-menu-toggle" onclick="document.querySelector('header nav').classList.toggle('active')">☰</button>
-            {# Navigační menu - liší se pro přihlášené a nepřihlášené uživatele #}
-            <nav>
-                {% if request.user.is_authenticated %}
-                    {# Zobrazení jména uživatele #}
-                    <span>{{ request.user.get_full_name|default:request.user.username }}</span>
-                    {% if request.user|is_teacher %}
-                        <a href="{% url 'quiz_list' %}" class="btn">Kvízy</a>
+        <header class="glass-effect shadow-xl border-b border-indigo-200/50 dark:border-indigo-800/50 sticky top-0 z-50 animate-fade-in">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center h-20 md:h-24">
+                    {# Logo aplikace - odkaz na úvodní stránku - pouze text #}
+                    <a href="/" class="logo-link flex items-center hover-lift group animate-slide-in">
+                        <span class="text-3xl md:text-4xl lg:text-5xl font-extrabold text-gradient">QuizIT!</span>
+                    </a>
+                    
+                    {# Desktop navigace #}
+                    <nav class="hidden md:flex items-center space-x-3 lg:space-x-4">
+                        {% if request.user.is_authenticated %}
+                            {# Zobrazení jména uživatele #}
+                            <span class="text-gray-800 dark:text-gray-200 font-semibold px-4 py-2 bg-gradient-to-r from-indigo-100 to-purple-100 dark:from-indigo-900/30 dark:to-purple-900/30 rounded-lg border border-indigo-200 dark:border-indigo-800">
+                                {{ request.user.get_full_name|default:request.user.username }}
+                            </span>
+                            {% if request.user|is_teacher %}
+                                <a href="{% url 'quiz_list' %}" class="px-4 py-2.5 text-gray-800 dark:text-gray-200 font-semibold rounded-lg hover:bg-gradient-to-r hover:from-indigo-500 hover:to-purple-500 hover:text-white transition-all duration-300 hover-lift border border-transparent hover:border-indigo-300">
+                                    Kvízy
+                                </a>
+                            {% endif %}
+                            <a href="{% url 'quiz_join' %}" class="px-4 py-2.5 text-gray-800 dark:text-gray-200 font-semibold rounded-lg hover:bg-gradient-to-r hover:from-indigo-500 hover:to-purple-500 hover:text-white transition-all duration-300 hover-lift border border-transparent hover:border-indigo-300">
+                                Připojit se
+                            </a>
+                            <a href="{% url 'account_logout' %}" class="px-4 py-2.5 text-red-600 dark:text-red-400 font-semibold rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-300 hover-lift border border-red-200 dark:border-red-800">
+                                Odhlásit
+                            </a>
+                        {% else %}
+                            {# Menu pro nepřihlášené uživatele #}
+                            <a href="{% url 'account_login' %}" class="px-5 py-2.5 text-gray-800 dark:text-gray-200 font-semibold rounded-lg hover:bg-gradient-to-r hover:from-indigo-500 hover:to-purple-500 hover:text-white transition-all duration-300 hover-lift border border-gray-300 dark:border-gray-600">
+                                Přihlášení
+                            </a>
+                            <a href="{% url 'account_signup' %}" class="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl hover-lift btn-ripple">
+                                Registrace
+                            </a>
+                        {% endif %}
+                    </nav>
+                    
+                    {# Mobilní menu tlačítko #}
+                    <button id="mobile-menu-btn" class="md:hidden p-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                    </button>
+                </div>
+                
+                {# Mobilní menu #}
+                <nav id="mobile-menu" class="hidden md:hidden pb-4 space-y-2">
+                    {% if request.user.is_authenticated %}
+                        <div class="px-3 py-2 text-gray-700 dark:text-gray-300 font-medium border-b border-gray-200 dark:border-gray-700">
+                            {{ request.user.get_full_name|default:request.user.username }}
+                        </div>
+                        {% if request.user|is_teacher %}
+                            <a href="{% url 'quiz_list' %}" class="block px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                                Kvízy
+                            </a>
+                        {% endif %}
+                        <a href="{% url 'quiz_join' %}" class="block px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                            Připojit se k kvízu
+                        </a>
+                        <a href="{% url 'account_logout' %}" class="block px-3 py-2 text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                            Odhlásit
+                        </a>
+                    {% else %}
+                        <a href="{% url 'account_login' %}" class="block px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                            Přihlášení
+                        </a>
+                        <a href="{% url 'account_signup' %}" class="block px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors">
+                            Registrace
+                        </a>
                     {% endif %}
-                    <a href="{% url 'quiz_join' %}" class="btn">Připojit se k kvízu</a>
-                    <a href="{% url 'account_logout' %}" class="btn">Odhlásit</a>
-                {% else %}
-                    {# Menu pro nepřihlášené uživatele #}
-                    <a href="{% url 'account_login' %}" class="btn">Přihlášení</a>
-                    <a href="{% url 'account_signup' %}" class="btn primary">Registrace</a>
-                {% endif %}
-            </nav>
+                </nav>
+            </div>
         </header>
 
         {# Hlavní obsah stránky - každá stránka zde vloží svůj obsah #}
-        <main class="main-content">
+        <main style="padding-bottom: 0 !important; margin-bottom: 0 !important; border-bottom: none !important;">
             {% block content %}{% endblock %}
         </main>
 
-        {# Zápatí stránky s informacemi o autorovi #}
-        <footer class="main-footer">
-            <p>SSPU OPAVA</p>
-            <p>Opava, 2025</p>
-        </footer>
-
-        {# Tlačítko pro přepínání tmavého/světlého režimu - fixní pozice #}
-        <button id="theme-toggle" class="theme-toggle-btn" title="Přepnout motiv">🌙</button>
+        {# Tlačítko pro přepínání tmavého/světlého režimu - fixní pozice vlevo dole #}
+        <button id="theme-toggle" class="fixed bottom-6 left-6 w-14 h-14 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 dark:from-indigo-500 dark:to-purple-500 dark:hover:from-indigo-600 dark:hover:to-purple-600 text-white rounded-full shadow-2xl hover:shadow-indigo-500/50 transition-all duration-300 flex items-center justify-center z-40 hover-lift glow-effect" title="Přepnout motiv">
+            <span id="theme-icon" class="text-2xl">🌙</span>
+        </button>
 
         {# Global javascript #}
         <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+        {# AGGRESIVNÍ OPRAVA NADPISŮ TABULEK - spustí se hned po načtení #}
+        <script>
+        (function() {
+          function forceFixTableHeaders() {
+            const allThs = document.querySelectorAll('thead th, table thead th');
+            allThs.forEach(th => {
+              // VŽDY černé pozadí a bílý text
+              th.style.setProperty('background', '#000000', 'important');
+              th.style.setProperty('color', '#ffffff', 'important');
+              th.style.setProperty('font-weight', '700', 'important');
+            });
+          }
+          if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', forceFixTableHeaders);
+          } else {
+            forceFixTableHeaders();
+          }
+          setTimeout(forceFixTableHeaders, 100);
+          setTimeout(forceFixTableHeaders, 500);
+          setTimeout(forceFixTableHeaders, 1000);
+        })();
+        </script>
+        <script src="{% static 'js/table-header-fix.js' %}"></script>
         <script>
         (function() {
           let theme = localStorage.getItem('theme') || 'light';
           const toggle = document.getElementById('theme-toggle');
+          const themeIcon = document.getElementById('theme-icon');
           const html = document.documentElement;
-          html.setAttribute('data-theme', theme);
-          if (toggle) {
+          
+          // Nastavení počátečního tématu
+          if (theme === 'dark') {
+            html.classList.add('dark');
+          } else {
+            html.classList.remove('dark');
+          }
+          
+          if (toggle && themeIcon) {
             const updateUI = () => {
-              toggle.textContent = theme === 'dark' ? '☀️' : '🌙';
-              html.setAttribute('data-theme', theme);
+              themeIcon.textContent = theme === 'dark' ? '☀️' : '🌙';
+              if (theme === 'dark') {
+                html.classList.add('dark');
+              } else {
+                html.classList.remove('dark');
+              }
               localStorage.setItem('theme', theme);
             };
-            updateUI();
+            
             toggle.onclick = () => {
               theme = theme === 'dark' ? 'light' : 'dark';
               updateUI();
             };
           }
+          
+          // Mobilní menu toggle
+          const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+          const mobileMenu = document.getElementById('mobile-menu');
+          if (mobileMenuBtn && mobileMenu) {
+            mobileMenuBtn.onclick = () => {
+              mobileMenu.classList.toggle('hidden');
+            };
+          }
+          
+          // Odstranění jakéhokoliv footer elementu
+          const removeFooter = () => {
+            const footers = document.querySelectorAll('footer, [class*="footer"], [id*="footer"]');
+            footers.forEach(footer => {
+              footer.style.display = 'none';
+              footer.style.visibility = 'hidden';
+              footer.style.height = '0';
+              footer.style.padding = '0';
+              footer.style.margin = '0';
+              footer.style.border = 'none';
+              footer.remove();
+            });
+          };
+          
+          // Spustit okamžitě a při změnách DOM
+          removeFooter();
+          document.addEventListener('DOMContentLoaded', removeFooter);
+          const observer = new MutationObserver(removeFooter);
+          observer.observe(document.body, { childList: true, subtree: true });
         })();
         </script>
 

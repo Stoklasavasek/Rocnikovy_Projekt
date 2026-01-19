@@ -19,7 +19,8 @@ class HomePage(Page):
     pass
 
 
-class EducationalMaterial(Page):
+# Vzdělávací materiály propojené s kvízy
+class EducationalMaterial(Page):  # Dědí z Wagtail Page
     """
     Vzdělávací materiály propojené s kvízy.
     
@@ -29,6 +30,7 @@ class EducationalMaterial(Page):
     
     Materiály se spravují přes Wagtail admin rozhraní.
     """
+    # Propojení s kvízem
     related_quiz = models.ForeignKey(
         'quiz.Quiz',
         null=True,
@@ -38,6 +40,7 @@ class EducationalMaterial(Page):
         verbose_name="Související kvíz",
         related_name='educational_materials'
     )
+    # Typ materiálu
     material_type = models.CharField(
         max_length=50,
         choices=[
@@ -49,6 +52,7 @@ class EducationalMaterial(Page):
         default='text',
         verbose_name="Typ materiálu"
     )
+    # Obsah materiálu
     content = RichTextField(blank=True, verbose_name="Obsah materiálu")
     external_url = models.URLField(
         blank=True,

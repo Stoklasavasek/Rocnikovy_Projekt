@@ -17,14 +17,14 @@ function toggleMaterial(index) {
 {% endblock %}
 
 {% block content %}
-<div class="container quiz-container">
-  <h1 class="quiz-title">{{ quiz.title }}</h1>
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-8 text-center">{{ quiz.title }}</h1>
   
   {# Zobrazení vzdělávacích materiálů před kvízem #}
   {% if educational_materials %}
-    <div class="educational-materials card pad my-4">
-      <h2>Vzdělávací materiály</h2>
-      <p class="text-muted">Před začátkem kvízu si můžete prostudovat následující materiály:</p>
+    <div class="card-modern mb-8" style="background: #1f2937 !important; border: 2px solid #374151 !important;">
+      <h2 class="text-2xl font-bold mb-4" style="color: #f9fafb !important;">Vzdělávací materiály</h2>
+      <p class="mb-4" style="color: #d1d5db !important;">Před začátkem kvízu si můžete prostudovat následující materiály:</p>
       <ul class="material-list">
         {% for material in educational_materials %}
           <li class="material-item pad-sm bg-card rounded my-2">
@@ -64,26 +64,26 @@ function toggleMaterial(index) {
   {% endif %}
   
   {# Formulář s otázkami a odpověďmi #}
-  <form method="post">
+  <form method="post" class="space-y-6">
     {% csrf_token %}
     {% for question in questions %}
-      <div class="card pad question-card">
-        <h3 class="question-header">Otázka {{ forloop.counter }}: {{ question.text }}</h3>
+      <div class="card-modern">
+        <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Otázka {{ forloop.counter }}: {{ question.text }}</h3>
         
         {# Zobrazení obrázku otázky, pokud existuje #}
         {% if question.image %}
-          <div class="question-image">
-            <img src="{{ question.image.url }}" alt="Obrázek k otázce">
+          <div class="mb-4 rounded-lg overflow-hidden">
+            <img src="{{ question.image.url }}" alt="Obrázek k otázce" class="w-full h-auto rounded-lg">
           </div>
         {% endif %}
         
         {# Seznam možných odpovědí (radio buttons) #}
-        <ul class="answer-list">
+        <ul class="space-y-3">
           {% for answer in question.answers.all %}
             <li>
-              <label class="answer-label">
-                <input type="radio" name="question_{{ question.id }}" value="{{ answer.id }}" required>
-                <span>{{ answer.text }}</span>
+              <label class="flex items-center p-4 rounded-lg border-2 border-gray-200 dark:border-gray-600 hover:border-indigo-400 dark:hover:border-indigo-500 cursor-pointer transition-colors bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700">
+                <input type="radio" name="question_{{ question.id }}" value="{{ answer.id }}" required class="mr-3 w-5 h-5 text-indigo-600 focus:ring-indigo-500">
+                <span class="text-gray-900 dark:text-gray-100 font-medium">{{ answer.text }}</span>
               </label>
             </li>
           {% endfor %}
@@ -92,8 +92,8 @@ function toggleMaterial(index) {
     {% endfor %}
     
     {# Tlačítko pro odeslání odpovědí #}
-    <div class="submit-section">
-      <button type="submit" class="btn primary btn-large">
+    <div class="flex justify-center pt-6">
+      <button type="submit" class="btn-primary px-8 py-4 text-lg font-bold">
         Odeslat odpovědi
       </button>
     </div>

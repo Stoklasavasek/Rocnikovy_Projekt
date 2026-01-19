@@ -1,5 +1,8 @@
 # Docker Compose konfigurace pro QuizIT! aplikaci
 # Obsahuje: PostgreSQL databázi, Django aplikaci + Socket.IO server
+# Cross-platform kompatibilní (Mac, Linux, Windows)
+
+version: '3.8'
 
 services:
   # PostgreSQL databáze pro ukládání dat aplikace
@@ -18,7 +21,8 @@ services:
       - "5432:5432"
     volumes:
       # Persistentní data Postgresu na hostiteli (složka `data/postgres` v projektu).
-      - ./data/postgres:/var/lib/postgresql/data
+      # Použití named volume pro lepší cross-platform kompatibilitu
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U kahoot_user -d kahoot"]
       interval: 10s
@@ -27,7 +31,9 @@ services:
 
   # Django aplikace + Socket.IO server v jednom kontejneru
   web:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: kahoot_app
     restart: unless-stopped
     ports:
@@ -44,19 +50,35 @@ services:
       DB_PASSWORD: kahoot_password
       DB_HOST: db
       DB_PORT: 5432
+      # Cross-platform kompatibilita
+      PYTHONUNBUFFERED: 1
+      PYTHONIOENCODING: utf-8
+      LANG: C.UTF-8
+      LC_ALL: C.UTF-8
     volumes:
-      # Sdílení media a static mezi hostem a kontejnerem.
-      - ./media:/app/media
-      - ./static:/app/static
-      # Přímé mountnutí šablon a statiky pro rychlý vývoj bez rebuildování image.
-      - ./kahootapp/static:/app/kahootapp/static
-      - ./home/static:/app/home/static
-      - ./kahootapp/templates:/app/kahootapp/templates
-      - ./quiz/templates:/app/quiz/templates
-      - ./home/templates:/app/home/templates
+      # Sdílení media a static mezi hostem a kontejnerem (cross-platform kompatibilní)
+      - ./media:/app/media:rw
+      - ./static:/app/static:rw
+      # Přímé mountnutí šablon a statiky pro rychlý vývoj bez rebuildování image
+      - ./kahootapp/static:/app/kahootapp/static:ro
+      - ./home/static:/app/home/static:ro
+      - ./kahootapp/templates:/app/kahootapp/templates:ro
+      - ./quiz/templates:/app/quiz/templates:ro
+      - ./home/templates:/app/home/templates:ro
       # Mountnutí Python souborů pro rychlý vývoj
-      - ./home:/app/home
-      - ./quiz:/app/quiz
-      - ./kahootapp:/app/kahootapp
+      - ./home:/app/home:ro
+      - ./quiz:/app/quiz:ro
+      - ./kahootapp:/app/kahootapp:ro
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
     command: /app/docker-entrypoint.sh
+
+# Named volumes pro cross-platform kompatibilitu
+volumes:
+  postgres_data:
+    driver: local
 

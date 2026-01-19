@@ -5,32 +5,57 @@
 {% block body_class %}template-quiz-join{% endblock %}
 
 {% block content %}
-<div class="container join-container">
-  <h1 class="join-title">Připojit se ke kvízu</h1>
-  {# Zobrazení chybových zpráv - pouze error messages související s připojením ke kvízu #}
-  {% if messages %}
-    {% for message in messages %}
-      {% if message.level == 40 and message.message and message.message|striptags|length > 0 %}
-        {% if forloop.first %}
-          <div class="card pad message-box">
-            <ul>
+<div class="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-md w-full space-y-8">
+    <div class="text-center">
+      <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-2">Připojit se ke kvízu</h1>
+      <p class="text-gray-600 dark:text-gray-400">Zadejte kód kvízu, který jste obdrželi od učitele</p>
+    </div>
+    
+    {# Zobrazení chybových zpráv #}
+    {% if messages %}
+      {% for message in messages %}
+        {% if message.level == 40 and message.message and message.message|striptags|length > 0 %}
+          {% if forloop.first %}
+            <div class="alert-error">
+              <ul class="list-disc list-inside space-y-1">
+          {% endif %}
+                <li>{{ message }}</li>
+          {% if forloop.last %}
+              </ul>
+            </div>
+          {% endif %}
         {% endif %}
-              <li>{{ message }}</li>
-        {% if forloop.last %}
-            </ul>
-          </div>
-        {% endif %}
-      {% endif %}
-    {% endfor %}
-  {% endif %}
-  {# Formulář pro zadání kódu kvízu #}
-  <div class="card pad">
-    <form method="post">
-      {% csrf_token %}
-      <label for="code" class="code-input-label">Kód kvízu</label>
-      <input id="code" name="code" type="text" class="code-input" placeholder="Zadejte kód" autofocus>
-      <button type="submit" class="btn primary submit-btn-full-width">Připojit se</button>
-    </form>
+      {% endfor %}
+    {% endif %}
+    
+    {# Formulář pro zadání kódu kvízu #}
+    <div class="card-modern p-8">
+      <form method="post" class="space-y-6">
+        {% csrf_token %}
+        <div>
+          <label for="code" class="label-modern">
+            Kód kvízu
+          </label>
+          <input 
+            id="code" 
+            name="code" 
+            type="text" 
+            class="input-modern text-center text-2xl font-bold tracking-widest uppercase" 
+            placeholder="Zadejte kód" 
+            autofocus
+            maxlength="6"
+            pattern="[A-Z0-9]{6}"
+          >
+        </div>
+        <button 
+          type="submit" 
+          class="w-full btn-primary py-3"
+        >
+          Připojit se
+        </button>
+      </form>
+    </div>
   </div>
 </div>
 {% endblock %}

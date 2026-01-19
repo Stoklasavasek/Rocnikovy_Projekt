@@ -9,7 +9,7 @@
       <img src="{{ qrun.question.image.url }}" alt="Obrázek k otázce">
     </div>
   {% endif %}
-  <h2 class="quiz-question"><span class="question-number">Otázka {{ qrun.order }}/{{ session.question_runs.count }}</span><span class="question-text">{{ qrun.question.text }}</span></h2>
+  <h2 class="quiz-question text-gray-900 dark:text-white"><span class="question-number">Otázka {{ qrun.order }}/{{ session.question_runs.count }}</span><span class="question-text">{{ qrun.question.text }}</span></h2>
   {% if remaining %}
     <p class="timer-display">Zbývající čas: <span class="remaining-time">{{ remaining }}</span> s</p>
   {% endif %}
@@ -106,13 +106,13 @@
   </script>
 
   {% if is_host %}
-    <div class="card pad stats-card">
-      <h3>Statistiky odpovědí</h3>
+    <div class="card-modern mb-6" style="background: #1f2937 !important; color: #f9fafb !important; border: 2px solid #374151 !important;">
+      <h3 style="color: #f9fafb !important;">Statistiky odpovědí</h3>
       <p><strong>Odpovědělo: <span class="answered-count stats-badge" id="answered-count">{{ answered_count }}</span> / <span class="stats-badge" id="total-participants">{{ total_participants }}</span></strong></p>
       
       {% if all_answered or time_over %}
-      <div class="stats-section">
-        <h4>Výsledky podle odpovědí:</h4>
+      <div class="stats-section" style="background: #111827 !important; border: 2px solid #374151 !important; color: #f9fafb !important;">
+        <h4 style="color: #f9fafb !important;">Výsledky podle odpovědí:</h4>
         <ul class="stats-list">
           {% for answer in qrun.question.answers.all %}
           {% with stats=answer_stats|get_item:answer.id %}
@@ -131,8 +131,8 @@
         </ul>
       </div>
       {% else %}
-      <div class="stats-section waiting">
-        <h4>Průběžné výsledky:</h4>
+      <div class="stats-section waiting" style="background: #111827 !important; border: 2px solid #374151 !important; color: #f9fafb !important;">
+        <h4 style="color: #f9fafb !important;">Průběžné výsledky:</h4>
         <ul class="stats-list">
           {% for answer in qrun.question.answers.all %}
           {% with stats=answer_stats|get_item:answer.id %}
@@ -147,20 +147,20 @@
           {% endwith %}
           {% endfor %}
         </ul>
-        <p class="waiting-message">Čekáme na odpovědi všech účastníků...</p>
+        <p class="waiting-message" style="color: #d1d5db !important;">Čekáme na odpovědi všech účastníků...</p>
       </div>
       {% endif %}
       
       <div class="tables-grid">
         <div>
-          <h4 class="participants-table-header">Průběžný žebříček:</h4>
-          <div class="participants-table-wrapper">
+          <h4 class="participants-table-header" style="color: #f9fafb !important;">Průběžný žebříček:</h4>
+          <div class="participants-table-wrapper" style="background: #111827 !important; border: 2px solid #374151 !important;">
             <table class="results-table">
-              <thead>
+              <thead style="background: #000000 !important;">
                 <tr class="table-header-row">
-                  <th>#</th>
-                  <th>Účastník</th>
-                  <th>Body</th>
+                  <th style="color: #ffffff !important; font-weight: 700 !important; background: #000000 !important;">#</th>
+                  <th style="color: #ffffff !important; font-weight: 700 !important; background: #000000 !important;">Účastník</th>
+                  <th style="color: #ffffff !important; font-weight: 700 !important; background: #000000 !important;">Body</th>
                 </tr>
               </thead>
               <tbody id="leaderboard-body">
@@ -179,14 +179,14 @@
         </div>
         
         <div>
-          <h4 class="participants-table-header">Kdo jak odpověděl:</h4>
-          <div class="participants-table-wrapper">
+          <h4 class="participants-table-header" style="color: #f9fafb !important;">Kdo jak odpověděl:</h4>
+          <div class="participants-table-wrapper" style="background: #111827 !important; border: 2px solid #374151 !important;">
             <table class="results-table">
-              <thead>
+              <thead style="background: #000000 !important;">
                 <tr class="table-header-row">
-                  <th>Účastník</th>
-                  <th>Odpověď</th>
-                  <th>Stav</th>
+                  <th style="color: #ffffff !important; font-weight: 700 !important; background: #000000 !important;">Účastník</th>
+                  <th style="color: #ffffff !important; font-weight: 700 !important; background: #000000 !important;">Odpověď</th>
+                  <th style="color: #ffffff !important; font-weight: 700 !important; background: #000000 !important;">Stav</th>
                 </tr>
               </thead>
               <tbody id="participants-responses-body">
@@ -238,9 +238,9 @@
       {# Vzdělávací materiály před otázkou #}
       {# Poznámka: Zobrazují se pouze když otázka ještě neběží, ne během kvízu #}
       {% if educational_materials_before %}
-        <div class="educational-materials card pad my-4">
-          <h2>Vzdělávací materiály</h2>
-          <p class="text-muted">Před začátkem otázky si můžete prostudovat následující materiály:</p>
+        <div class="card-modern mb-6" style="background: #1f2937 !important; border: 2px solid #374151 !important;">
+          <h2 class="text-2xl font-bold mb-4" style="color: #f9fafb !important;">Vzdělávací materiály</h2>
+          <p class="mb-4" style="color: #d1d5db !important;">Před začátkem otázky si můžete prostudovat následující materiály:</p>
           <ul class="material-list">
             {% for material in educational_materials_before %}
               <li class="material-item pad-sm bg-card rounded my-2">
@@ -316,7 +316,7 @@
       <ul class="answer-list" id="answer-list">
         {% for a in qrun.question.answers.all %}
           <li data-answer-id="{{ a.id }}">
-            <label class="answer-label">
+            <label class="answer-label bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100">
               <input type="radio" name="answer_id" value="{{ a.id }}" required>
               <span>{{ a.text }}</span>
             </label>
@@ -564,6 +564,7 @@
   let fallbackInterval = null;
   
   if (typeof io !== 'undefined') {
+    // Připojení k Socket.IO serveru
     socket = io('http://localhost:8001', {
       transports: ['websocket', 'polling'],
       reconnection: true,
@@ -571,8 +572,10 @@
       reconnectionAttempts: 10
     });
     
+    // Připojení k serveru
     socket.on('connect', () => {
       socketConnected = true;
+      // Připojení k místnosti session
       socket.emit('join_session', {hash: hash});
       stopFallback();
     });
@@ -584,18 +587,21 @@
     
     socket.on('connect_error', startFallback);
     
+    // Naslouchání změnám stavu session
     socket.on('session_state', (data) => {
       if (data.state === 'finished') {
         window.location.href = resultsUrl;
       } else if (data.state === 'question' && data.order !== order) {
+        // Přesměrování na novou otázku
         window.location.href = `/session/${hash}/q/${data.order}/`;
       }
     });
     
+    // Naslouchání aktualizacím odpovědí
     socket.on('answer_update', (data) => {
       if (data) {
         const dataOrder = data.question_order ?? data.order;
-        if (dataOrder === order) updateStatsFromData(data);
+        if (dataOrder === order) updateStatsFromData(data);  // Aktualizace statistik na stránce
       }
     });
     

@@ -1,0 +1,277 @@
+/* ===== REUSABLE COMPONENTS - DRY PRINCIPLE ===== */
+/* 
+ * Opakující se komponenty pro použití napříč aplikací
+ * Kompatibilní s Tailwind CDN (bez @apply direktivy)
+ */
+
+/* Button variants - reusable button styles with gradients */
+.btn-primary {
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  font-weight: 600;
+  border-radius: 0.75rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 10px 15px -3px rgba(102, 126, 234, 0.4), 0 4px 6px -2px rgba(102, 126, 234, 0.2);
+  border: none;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-primary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.btn-primary:hover::before {
+  left: 100%;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #5568d3 0%, #6a3f8f 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 20px 25px -5px rgba(102, 126, 234, 0.5), 0 10px 10px -5px rgba(102, 126, 234, 0.3);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.dark .btn-primary {
+  background: linear-gradient(135deg, #818cf8 0%, #a78bfa 100%);
+  box-shadow: 0 10px 15px -3px rgba(129, 140, 248, 0.4), 0 4px 6px -2px rgba(129, 140, 248, 0.2);
+}
+
+.dark .btn-primary:hover {
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  box-shadow: 0 20px 25px -5px rgba(129, 140, 248, 0.5), 0 10px 10px -5px rgba(129, 140, 248, 0.3);
+}
+
+.btn-secondary {
+  padding: 0.5rem 1rem;
+  background-color: #f3f4f6;
+  color: #374151;
+  font-weight: 500;
+  border-radius: 0.5rem;
+  transition: all 0.2s;
+}
+
+.btn-secondary:hover {
+  background-color: #e5e7eb;
+}
+
+.dark .btn-secondary {
+  background-color: #374151;
+  color: #d1d5db;
+}
+
+.dark .btn-secondary:hover {
+  background-color: #4b5563;
+}
+
+.btn-danger {
+  padding: 0.5rem 1rem;
+  background-color: #dc2626;
+  color: white;
+  font-weight: 500;
+  border-radius: 0.5rem;
+  transition: all 0.2s;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.btn-danger:hover {
+  background-color: #b91c1c;
+}
+
+/* Card component with glassmorphism and enhanced styling */
+.card-modern {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-radius: 1.5rem;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04), 0 0 0 1px rgba(102, 126, 234, 0.1);
+  border: 1px solid rgba(102, 126, 234, 0.2);
+  padding: 2rem;
+  color: #111827;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.dark .card-modern {
+  background: #1f2937 !important;
+  border: 2px solid #374151 !important;
+  color: #f9fafb !important;
+}
+
+/* Všechny card-modern mají tmavé pozadí */
+.card-modern {
+  background: #1f2937 !important;
+  border: 2px solid #374151 !important;
+  color: #f9fafb !important;
+}
+
+.card-modern::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.1), transparent);
+  transition: left 0.6s;
+}
+
+.card-modern:hover::before {
+  left: 100%;
+}
+
+.card-modern:hover {
+  border-color: rgba(102, 126, 234, 0.4);
+  box-shadow: 0 25px 50px -12px rgba(102, 126, 234, 0.3), 0 0 0 1px rgba(102, 126, 234, 0.2);
+  transform: translateY(-6px) scale(1.01);
+}
+
+.dark .card-modern {
+  background: rgba(17, 24, 39, 0.7);
+  border-color: rgba(129, 140, 248, 0.2);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(129, 140, 248, 0.1);
+}
+
+.dark .card-modern:hover {
+  border-color: rgba(129, 140, 248, 0.4);
+  box-shadow: 0 25px 50px -12px rgba(129, 140, 248, 0.3), 0 0 0 1px rgba(129, 140, 248, 0.2);
+}
+
+/* Form inputs with enhanced styling */
+.input-modern {
+  width: 100%;
+  padding: 0.875rem 1.25rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 0.75rem;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(249, 250, 251, 0.95) 100%);
+  color: #111827;
+  font-weight: 500;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+}
+
+.input-modern::placeholder {
+  color: #9ca3af;
+  font-weight: 400;
+}
+
+.input-modern:focus {
+  outline: none;
+  border-color: #667eea;
+  background: white;
+  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1), 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+}
+
+.dark .input-modern {
+  background: linear-gradient(135deg, rgba(55, 65, 81, 0.95) 0%, rgba(31, 41, 55, 0.95) 100%);
+  border-color: #4b5563;
+  color: white;
+}
+
+.dark .input-modern::placeholder {
+  color: #6b7280;
+}
+
+.dark .input-modern:focus {
+  border-color: #818cf8;
+  background: #374151;
+  box-shadow: 0 0 0 4px rgba(129, 140, 248, 0.2), 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+}
+
+/* Label with better contrast */
+.label-modern {
+  display: block;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 0.625rem;
+  letter-spacing: 0.025em;
+}
+
+.dark .label-modern {
+  color: #f3f4f6;
+}
+
+/* Badge/Pill */
+.badge-primary {
+  padding: 0.25rem 0.75rem;
+  display: inline-flex;
+  font-size: 0.75rem;
+  line-height: 1.25rem;
+  font-weight: 600;
+  border-radius: 9999px;
+  background-color: #e0e7ff;
+  color: #3730a3;
+}
+
+.dark .badge-primary {
+  background-color: #312e81;
+  color: #c7d2fe;
+}
+
+/* Alert/Message boxes */
+.alert-error {
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+}
+
+.dark .alert-error {
+  background-color: rgba(127, 29, 29, 0.2);
+  border-color: #991b1b;
+  color: #fca5a5;
+}
+
+.alert-success {
+  background-color: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #166534;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+}
+
+.dark .alert-success {
+  background-color: rgba(20, 83, 45, 0.2);
+  border-color: #166534;
+  color: #86efac;
+}
+
+/* Section header */
+.section-header {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 1rem;
+}
+
+.dark .section-header {
+  color: white;
+}
+
+/* Page header */
+.page-header {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 0.5rem;
+}
+
+.dark .page-header {
+  color: white;
+}
+

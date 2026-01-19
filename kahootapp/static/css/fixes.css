@@ -1,0 +1,142 @@
+/* ===== FIXES - Footer & Logo Outline & Tables ===== */
+/* Optimalizovaný soubor pro všechny fixy - DRY princip */
+
+/* Footer removal */
+footer, footer.main-footer, body > footer, main + footer, *[class*="footer"], *[id*="footer"] {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: none !important;
+}
+
+main, body, html {
+  border-bottom: none !important;
+  padding-bottom: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+body::after, main::after, html::after, body::before, main::before, html::before {
+  display: none !important;
+  content: "" !important;
+  height: 0 !important;
+}
+
+body {
+  overflow-x: hidden;
+  min-height: 100vh !important;
+  height: auto;
+  padding-bottom: 0 !important;
+  margin-bottom: 0 !important;
+  background-attachment: fixed !important;
+}
+
+main {
+  padding-bottom: 0 !important;
+  margin-bottom: 0 !important;
+  border-bottom: none !important;
+}
+
+/* Zajištění, že pozadí je jednotné i při scrollování */
+html {
+  background: inherit !important;
+  height: 100% !important;
+}
+
+/* Logo outline removal */
+header a[href="/"], header a[href="/"]:hover, header a[href="/"]:focus, header a[href="/"]:active,
+.landing-logo, .landing-logo *, .landing-logo img, .landing-logo div, img[alt="QuizIT!"],
+.relative.inline-block, .relative.inline-block * {
+  outline: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.landing-logo:hover *, .landing-logo:focus *, .landing-logo:active *,
+.relative.inline-block:hover *, .relative.inline-block:focus * {
+  outline: none !important;
+  border: none !important;
+}
+
+header a[href="/"],
+.logo-link {
+  text-decoration: none !important;
+  outline: none !important;
+  border: none !important;
+}
+
+/* ===== TABLES OPTIMIZATION ===== */
+/* Moderní styling pro tabulky s glassmorphism - sloučeno z tables.css */
+.results-table, table.results-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: transparent;
+}
+
+/* Všechny nadpisy tabulek - agresivní přepsání */
+table thead th,
+table.results-table thead th,
+.results-table thead th,
+table:not(.results-table) thead th,
+.min-w-full thead th {
+  color: #1f2937 !important;
+  background: rgba(249, 250, 251, 0.5) !important;
+  backdrop-filter: blur(10px);
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 2px solid rgba(229, 231, 235, 0.5);
+}
+
+.dark table thead th,
+.dark table.results-table thead th,
+.dark .results-table thead th,
+.dark table:not(.results-table) thead th,
+.dark .min-w-full thead th {
+  color: #f9fafb !important;
+  background: rgba(55, 65, 81, 0.5) !important;
+  border-bottom-color: rgba(75, 85, 99, 0.5);
+}
+
+.results-table tbody td, table.results-table tbody td {
+  padding: 0.75rem 1rem;
+  background: transparent;
+  color: #111827;
+  border-bottom: 1px solid rgba(229, 231, 235, 0.3);
+}
+
+.dark .results-table tbody td, .dark table.results-table tbody td {
+  color: #f3f4f6;
+  border-bottom-color: rgba(75, 85, 99, 0.3);
+}
+
+.results-table tbody tr:hover, table.results-table tbody tr:hover {
+  background: rgba(249, 250, 251, 0.3);
+}
+
+.dark .results-table tbody tr:hover, .dark table.results-table tbody tr:hover {
+  background: rgba(55, 65, 81, 0.3);
+}
+
+.participants-table-wrapper {
+  background: transparent;
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.participants-table-header {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827 !important;
+  margin-bottom: 0.75rem;
+}
+
+.dark .participants-table-header {
+  color: #f9fafb !important;
+}
+

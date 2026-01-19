@@ -49,14 +49,15 @@ ACCOUNT_EMAIL_REQUIRED = False
 ACCOUNT_USERNAME_REQUIRED = True
 
 # Microsoft provider pro OAuth login. Hodnoty se berou z env proměnných.
+# Konfigurace django-allauth pro Microsoft OAuth
 SOCIALACCOUNT_PROVIDERS = {
     "microsoft": {
         "APP": {
-            "client_id": os.environ.get("MS_CLIENT_ID", ""),
-            "secret": os.environ.get("MS_CLIENT_SECRET","") ,
+            "client_id": os.environ.get("MS_CLIENT_ID", ""),  # Načítá z .env 
+            "secret": os.environ.get("MS_CLIENT_SECRET","") ,  # Načítá z .env
             "key": "",
         },
-        "tenant": os.environ.get("MS_TENANT_ID", "common"),
+        "tenant": os.environ.get("MS_TENANT_ID", "common"), # - Microsoft účet
         "AUTH_PARAMS": {
             "scope": os.environ.get("MS_AUTH_SCOPE", "User.Read"),
         },

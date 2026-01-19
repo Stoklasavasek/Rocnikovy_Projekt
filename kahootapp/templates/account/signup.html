@@ -3,30 +3,107 @@
 {# Šablona pro registraci nového uživatele #}
 
 {% block content %}
-<div class="container">
-  <div class="card pad auth-container">
-    <h2 class="auth-form-title">Registrace</h2>
-    {# Formulář pro registraci nového uživatele #}
-    <form method="post" action="{% url 'account_signup' %}">
-      {% csrf_token %}
-      {{ form.non_field_errors }}
-      <div class="auth-form-fields">
-        {% for field in form %}
-          {{ field.label_tag }}
-          {{ field }}
-          {% if field.errors %}<div class="field-error">{{ field.errors }}</div>{% endif %}
-        {% endfor %}
+<div class="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-md w-full space-y-8">
+      <div class="card-modern p-8">
+      <div class="text-center mb-8">
+        <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Registrace</h2>
+        <p class="text-gray-600 dark:text-gray-400">Vytvořte si nový účet</p>
       </div>
-      <div class="auth-form-actions">
-        <button class="btn primary" type="submit">Zaregistrovat</button>
-        <a class="btn" href="{% url 'account_login' %}">Mám účet</a>
+      
+      {# Formulář pro registraci nového uživatele #}
+      <form method="post" action="{% url 'account_signup' %}" class="space-y-6">
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+          <div class="alert-error">
+            {{ form.non_field_errors }}
+          </div>
+        {% endif %}
+        
+        <div class="space-y-4">
+          {% for field in form %}
+            <div>
+              <label for="{{ field.id_for_label }}" class="label-modern">
+                {{ field.label }}
+                {% if field.field.required %}<span class="text-red-500">*</span>{% endif %}
+              </label>
+              {{ field }}
+              {% if field.errors %}
+                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ field.errors.0 }}</p>
+              {% endif %}
+              {% if field.help_text %}
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ field.help_text }}</p>
+              {% endif %}
+            </div>
+          {% endfor %}
+        </div>
+        
+        <div class="flex flex-col space-y-3">
+          <button type="submit" class="w-full btn-primary py-3">
+            Zaregistrovat
+          </button>
+          <a href="{% url 'account_login' %}" class="w-full text-center btn-secondary py-3">
+            Mám účet
+          </a>
+        </div>
+      </form>
+      
+      <div class="mt-6">
+        <div class="relative">
+          <div class="absolute inset-0 flex items-center">
+            <div class="w-full border-t border-gray-300 dark:border-gray-600"></div>
+          </div>
+          <div class="relative flex justify-center text-sm">
+            <span class="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">nebo</span>
+          </div>
+        </div>
+        
+        {# Registrace pomocí Microsoft OAuth #}
+        <div class="mt-6">
+          <a href="{% provider_login_url 'microsoft' method='oauth2' %}" class="w-full flex items-center justify-center gap-3 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-medium py-3 px-4 rounded-lg border border-gray-300 dark:border-gray-600 transition-colors shadow-sm">
+            <svg class="w-5 h-5" viewBox="0 0 23 23" fill="none">
+              <path d="M11.5 11.5H22.5V22.5H11.5V11.5Z" fill="#F25022"/>
+              <path d="M0.5 11.5H11.5V22.5H0.5V22.5Z" fill="#7FBA00"/>
+              <path d="M0.5 0.5H11.5V11.5H0.5V0.5Z" fill="#00A4EF"/>
+              <path d="M11.5 0.5H22.5V11.5H11.5V0.5Z" fill="#FFB900"/>
+            </svg>
+            Přihlásit se přes Microsoft
+          </a>
+        </div>
       </div>
-    </form>
-    <hr class="auth-divider">
-    {# Registrace pomocí Microsoft OAuth #}
-    <div>
-      <a class="btn" href="{% provider_login_url 'microsoft' method='oauth2' %}">Přihlásit se přes Microsoft</a>
     </div>
   </div>
 </div>
+
+<style>
+  /* Stylování Django formulářových polí */
+  {% for field in form %}
+    #{{ field.id_for_label }} {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border: 1px solid #d1d5db;
+      border-radius: 0.5rem;
+      background-color: #ffffff;
+      color: #111827;
+      transition: all 0.2s;
+    }
+    .dark #{{ field.id_for_label }} {
+      border-color: #4b5563;
+      background-color: #374151;
+      color: #f9fafb;
+    }
+    #{{ field.id_for_label }}:focus {
+      outline: none;
+      ring: 2px;
+      ring-color: #6366f1;
+      border-color: #6366f1;
+    }
+    #{{ field.id_for_label }}::placeholder {
+      color: #9ca3af;
+    }
+    .dark #{{ field.id_for_label }}::placeholder {
+      color: #6b7280;
+    }
+  {% endfor %}
+</style>
 {% endblock %}

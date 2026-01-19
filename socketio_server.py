@@ -86,6 +86,7 @@ def disconnect(sid):
     pass
 
 
+# Připojení klienta k session
 @sio.event
 def join_session(sid, data):
     """Připojit se k session."""
@@ -94,9 +95,13 @@ def join_session(sid, data):
         return {'status': 'error', 'message': 'No hash provided'}
     
     try:
+        # Získání session z databáze
         session = QuizSession.objects.get(hash=session_hash, is_active=True)
+        # Vytvoření názvu místnosti pro session
         room_name = get_room_name(session_hash)
+        # Připojení klienta do místnosti
         sio.enter_room(sid, room_name)
+        # Odeslání aktuálního stavu session
         send_session_status(session_hash)
         return {'status': 'joined', 'room': room_name}
     except QuizSession.DoesNotExist:

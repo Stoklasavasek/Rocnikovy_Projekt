@@ -1,20 +1,36 @@
 {% extends "base.html" %}
 {% load static %}
 {% block content %}
-{# Úvodní stránka aplikace s logem a hlavními akcemi #}
-<div class="container">
-  <section class="hero card pad">
-    {# Velké logo na úvodní stránce #}
-    <img src="{% static 'img/Transpa16.90.png' %}" alt="QuizIT!" class="hero-logo">
-    {# Popis aplikace #}
-    <p>Vytvářej kvízy, spouštěj live sezení a nech studenty soutěžit v reálném čase.</p>
-    {# Tlačítka pro hlavní akce #}
-    <div class="actions">
+{# Úvodní stránka aplikace s logem a hlavními akcemi - inspirováno thepiksel.com #}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-32">
+  <section class="text-center">
+    {# Velké logo na úvodní stránce s animací #}
+    <div class="mb-16 animate-slide-in-up landing-logo">
+      <div class="relative inline-block">
+        <img src="{% static 'img/Transpa16.90.png' %}" alt="QuizIT!" class="mx-auto h-48 md:h-64 lg:h-80 w-auto drop-shadow-2xl hover-lift transition-all duration-700 animate-float">
+        <div class="absolute inset-0 bg-gradient-to-r from-indigo-400/30 via-purple-400/30 to-pink-400/30 rounded-full blur-3xl -z-10 animate-pulse"></div>
+      </div>
+    </div>
+    
+    {# Popis aplikace s moderní typografií #}
+    <h1 class="text-6xl md:text-7xl lg:text-8xl font-black mb-4 animate-fade-in" style="animation-delay: 0.2s;">
+      <span class="text-gradient block mb-2">Vytvářej kvízy</span>
+      <span class="text-gray-900 dark:text-white block">spouštěj live sezení</span>
+    </h1>
+    
+    {# Tlačítka pro hlavní akce s moderními efekty - přímo pod nadpisem #}
+    <div class="flex flex-col sm:flex-row gap-6 md:gap-8 justify-center items-center mb-12 animate-fade-in" style="animation-delay: 0.3s;">
       {% if is_teacher %}
-        <a class="btn primary" href="{% url 'quiz_list' %}">Moje kvízy</a>
-        <a class="btn ghost" href="/admin/">Administrace</a>
+        <a href="{% url 'quiz_list' %}" class="btn-primary px-10 py-5 text-xl font-bold shadow-2xl hover:shadow-indigo-500/50">
+          Moje kvízy
+        </a>
+        <a href="/admin/" class="btn-secondary px-10 py-5 text-xl font-bold border-2">
+          Administrace
+        </a>
       {% endif %}
-      <a class="btn" href="{% url 'quiz_join' %}">Připojit se ke kvízu</a>
+      <a href="{% url 'quiz_join' %}" class="btn-primary px-10 py-5 text-xl font-bold shadow-2xl hover:shadow-indigo-500/50">
+        Připojit se ke kvízu
+      </a>
     </div>
   </section>
 </div>

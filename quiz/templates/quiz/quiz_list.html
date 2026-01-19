@@ -5,67 +5,105 @@
 {% block body_class %}template-quiz-list{% endblock %}
 
 {% block content %}
-<div class="container quiz-list-container">
-  <h1 class="quiz-list-header">Moje kvízy</h1>
-  {# Akční tlačítka pro vytvoření kvízu a správu #}
-  <div class="quiz-list-actions">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  {# Header s akčními tlačítky #}
+  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+    <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Moje kvízy</h1>
     {% if is_teacher %}
-      <a href="{% url 'quiz_create' %}" class="btn primary">Vytvořit kvíz</a>
-      <a href="/admin/" class="btn">Spravovat v administraci</a>
+      <div class="flex gap-3">
+        <a href="{% url 'quiz_create' %}" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition-colors shadow-sm">
+          Vytvořit kvíz
+        </a>
+        <a href="/admin/" class="px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg transition-colors">
+          Spravovat v administraci
+        </a>
+      </div>
     {% endif %}
   </div>
 
   {# Tabulka s kvízy uživatele #}
-  <div class="card card-overflow">
-    <table class="quiz-table">
-      <thead>
-        <tr>
-          <th>Název</th>
-          <th>Kód</th>
-          <th>Akce</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for quiz in quizzes %}
-        <tr>
-          <td>{{ quiz.title }}</td>
-          <td><strong>{{ quiz.join_code }}</strong></td>
-          <td>
-            <div class="quiz-actions">
-              <a href="{% url 'session_create' quiz.id %}">Start live</a>
-              <a href="{% url 'quiz_start' quiz.id %}">Spustit</a>
-              <a href="{% url 'quiz_update' quiz.id %}">Upravit</a>
-              <a href="{% url 'quiz_delete' quiz.id %}" class="delete">Smazat</a>
-            </div>
-          </td>
-        </tr>
-        {% empty %}
-        <tr>
-          <td colspan="3" class="quiz-table-empty">Zatím žádné kvízy.</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+  <div class="card-modern overflow-hidden mb-8">
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-800">
+        <thead style="background: #000000 !important;">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style="color: #ffffff !important; font-weight: 700 !important; background: #000000 !important;">Název</th>
+            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style="color: #ffffff !important; font-weight: 700 !important; background: #000000 !important;">Kód</th>
+            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style="color: #ffffff !important; font-weight: 700 !important; background: #000000 !important;">Akce</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-800">
+          {% for quiz in quizzes %}
+          <tr class="hover:bg-gray-100/50 dark:hover:bg-gray-700/50 transition-colors">
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm font-medium text-gray-900 dark:text-white">{{ quiz.title }}</div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200">
+                {{ quiz.join_code }}
+              </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+              <div class="flex flex-wrap gap-2">
+                <a href="{% url 'session_create' quiz.id %}" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300 transition-colors">
+                  Start live
+                </a>
+                <span class="text-gray-300 dark:text-gray-600">|</span>
+                <a href="{% url 'quiz_start' quiz.id %}" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300 transition-colors">
+                  Spustit
+                </a>
+                <span class="text-gray-300 dark:text-gray-600">|</span>
+                <a href="{% url 'quiz_update' quiz.id %}" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300 transition-colors">
+                  Upravit
+                </a>
+                <span class="text-gray-300 dark:text-gray-600">|</span>
+                <a href="{% url 'quiz_delete' quiz.id %}" class="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300 transition-colors">
+                  Smazat
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="3" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+              Zatím žádné kvízy.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
   </div>
-</div>
 
-{# Sekce s aktivními sezeními #}
-<div class="container quiz-list-container quiz-list-container-margin">
-  <h2 class="quiz-list-subtitle">Aktivní sezení</h2>
-  <div class="card pad">
-    <ul class="active-sessions-list">
-      {% for s in active_sessions %}
-        <li class="session-item">
-          <span>Kód: <strong>{{ s.code }}</strong></span>
-          <div class="session-item-actions">
-            <a href="{% url 'session_lobby' s.hash %}" class="btn">Lobby</a>
-            <a href="{% url 'session_results' s.hash %}" class="btn">Výsledky</a>
-          </div>
-        </li>
-      {% empty %}
-        <li class="session-item session-item-empty">Žádná aktivní sezení.</li>
-      {% endfor %}
-    </ul>
+  {# Sekce s aktivními sezeními #}
+  <div class="mb-8">
+    <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">Aktivní sezení</h2>
+    <div class="card-modern">
+      {% if active_sessions %}
+        <div class="space-y-3">
+          {% for s in active_sessions %}
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 p-4 bg-gray-100/50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600 backdrop-blur-sm">
+              <div class="flex items-center gap-3">
+                <span class="text-sm text-gray-600 dark:text-gray-400">Kód:</span>
+                <span class="px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200">
+                  {{ s.code }}
+                </span>
+              </div>
+              <div class="flex gap-2">
+                <a href="{% url 'session_lobby' s.hash %}" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors">
+                  Lobby
+                </a>
+                <a href="{% url 'session_results' s.hash %}" class="px-4 py-2 bg-gray-100 dark:bg-gray-600 hover:bg-gray-200 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-lg transition-colors">
+                  Výsledky
+                </a>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="text-center text-gray-500 dark:text-gray-400 py-8">Žádná aktivní sezení.</p>
+      {% endif %}
+    </div>
   </div>
 </div>
 {% endblock %}

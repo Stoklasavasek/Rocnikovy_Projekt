@@ -3,12 +3,12 @@
 {# Šablona pro lobby živého sezení - zobrazuje kód pro připojení, účastníky a otázky #}
 
 {% block content %}
-<div class="container lobby-container">
-  <h1 class="lobby-title">Lobby: {{ session.quiz.title }}</h1>
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-8 text-center">Lobby: {{ session.quiz.title }}</h1>
   {# Velký a výrazný kód pro připojení - učitel ho sdílí se studenty #}
-  <div class="lobby-code">
-    <p>Kód pro připojení:</p>
-    <strong>{{ session.code }}</strong>
+  <div class="card-modern text-center mb-8">
+    <p class="text-lg text-gray-600 dark:text-gray-400 mb-2">Kód pro připojení:</p>
+    <strong class="text-5xl font-black text-gradient">{{ session.code }}</strong>
   </div>
   
   {# Sekce pro učitele (host) #}
@@ -30,28 +30,28 @@
     </script>
     
     {# Seznam účastníků připojených k sezení #}
-    <div class="card pad lobby-section">
-      <h3 class="lobby-section-title">Účastníci</h3>
-      <ul class="participants-grid">
+    <div class="card-modern mb-6">
+      <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Účastníci</h3>
+      <ul class="grid grid-cols-2 md:grid-cols-3 gap-3">
         {% for p in session.participants.all %}
-          <li class="participant-item">{{ p.display_name }}</li>
+          <li class="p-3 bg-gray-100/50 dark:bg-gray-700/50 rounded-lg text-center text-gray-900 dark:text-white font-medium">{{ p.display_name }}</li>
         {% empty %}
-          <li class="participant-item participant-item-empty">Zatím nikdo</li>
+          <li class="col-span-full p-3 text-center text-gray-500 dark:text-gray-400">Zatím nikdo</li>
         {% endfor %}
       </ul>
     </div>
     
     {# Seznam otázek v kvízu s možností spuštění #}
-    <div class="card pad lobby-section">
-      <h3 class="lobby-section-title">Otázky</h3>
-      <ol class="questions-list">
+    <div class="card-modern mb-6">
+      <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Otázky</h3>
+      <ol class="space-y-3">
         {% for qrun in session.question_runs.all %}
-          <li class="question-item">
-            <span class="question-text">{{ qrun.question.text }}</span>
+          <li class="flex justify-between items-center p-4 bg-gray-100/50 dark:bg-gray-700/50 rounded-lg">
+            <span class="text-gray-900 dark:text-white font-medium">{{ qrun.question.text }}</span>
             {% if not qrun.starts_at %}
-              <a href="{% url 'session_start_question' session.hash qrun.order %}" class="btn primary question-start-btn">Spustit</a>
+              <a href="{% url 'session_start_question' session.hash qrun.order %}" class="btn-primary px-4 py-2">Spustit</a>
             {% else %}
-              <span class="question-status">✓ spuštěno</span>
+              <span class="text-green-600 dark:text-green-400 font-semibold">✓ spuštěno</span>
             {% endif %}
           </li>
         {% endfor %}
@@ -59,16 +59,19 @@
     </div>
     
     {# Tlačítko pro ukončení sezení #}
-    <p>
-      <a href="{% url 'session_finish' session.hash %}" class="btn btn-danger">Ukončit sezení</a>
-    </p>
+    <div class="flex justify-center">
+      <a href="{% url 'session_finish' session.hash %}" class="btn-danger px-6 py-3">Ukončit sezení</a>
+    </div>
   {# Sekce pro studenty #}
   {% else %}
     {# Informace o přihlášeném studentovi #}
-    <p>Přihlášen jako: <strong>{{ participant.display_name }}</strong></p>
-    <div class="card pad success-message">
-      <p>Úspěšně jste se připojili!</p>
-      <p>Jakmile učitel spustí otázku, budete automaticky přesměrováni.</p>
+    <div class="card-modern mb-6 text-center">
+      <p class="text-gray-600 dark:text-gray-400 mb-2">Přihlášen jako:</p>
+      <strong class="text-2xl text-gray-900 dark:text-white">{{ participant.display_name }}</strong>
+    </div>
+    <div class="card-modern mb-6 text-center bg-green-50 dark:bg-green-900/30 border-2 border-green-200 dark:border-green-700">
+      <p class="text-green-800 dark:text-green-200 font-semibold mb-2 text-lg">Úspěšně jste se připojili!</p>
+      <p class="text-green-700 dark:text-green-300">Jakmile učitel spustí otázku, budete automaticky přesměrováni.</p>
     </div>
     
     {# JavaScript pro automatickou aktualizaci počtu účastníků (stejně jako u učitele) #}
@@ -99,9 +102,9 @@
     
     {# Vzdělávací materiály před začátkem kvízu (pro studenty) #}
     {% if educational_materials_before %}
-      <div class="educational-materials card pad my-4">
-        <h2>Vzdělávací materiály</h2>
-        <p class="text-muted">Před začátkem kvízu si můžete prostudovat následující materiály:</p>
+      <div class="card-modern mb-6" style="background: #1f2937 !important; border: 2px solid #374151 !important;">
+        <h2 class="text-2xl font-bold mb-4" style="color: #f9fafb !important;">Vzdělávací materiály</h2>
+        <p class="mb-4" style="color: #d1d5db !important;">Před začátkem kvízu si můžete prostudovat následující materiály:</p>
         <ul class="material-list">
           {% for material in educational_materials_before %}
             <li class="material-item pad-sm bg-card rounded my-2">
@@ -141,15 +144,15 @@
     {% endif %}
     
     {# Seznam dalších účastníků (pro studenty) #}
-    <div class="card pad lobby-section lobby-section-margin">
-      <h3 class="lobby-section-title">Další účastníci</h3>
-      <ul class="participants-grid">
+    <div class="card-modern">
+      <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Další účastníci</h3>
+      <ul class="grid grid-cols-2 md:grid-cols-3 gap-3">
         {% for p in session.participants.all %}
-          <li class="participant-item {% if p.id == participant.id %}current{% endif %} participant-item-small">
+          <li class="p-3 rounded-lg text-center font-medium {% if p.id == participant.id %}bg-indigo-100 dark:bg-indigo-900/50 text-indigo-900 dark:text-indigo-200{% else %}bg-gray-100/50 dark:bg-gray-700/50 text-gray-900 dark:text-white{% endif %}">
             {{ p.display_name }}{% if p.id == participant.id %} <strong>(vy)</strong>{% endif %}
           </li>
         {% empty %}
-          <li class="participant-item participant-item-empty">Zatím jste sami</li>
+          <li class="col-span-full p-3 text-center text-gray-500 dark:text-gray-400">Zatím jste sami</li>
         {% endfor %}
       </ul>
     </div>

@@ -4,42 +4,59 @@
 {% block body_class %}template-quiz-create-full{% endblock %}
 
 {% block content %}
-<div class="quiz-form-container">
-  <h1>{% if quiz %}Upravit kvíz{% else %}Vytvořit nový kvíz{% endif %}</h1>
-  <p class="quiz-form-description">{% if quiz %}Upravte kvíz s otázkami a odpověďmi.{% else %}Vytvořte kvíz s otázkami a odpověďmi najednou.{% endif %} Můžete přidat více otázek kliknutím na tlačítko "Přidat otázku".</p>
+<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <div class="mb-8">
+    <h1 class="page-header">{% if quiz %}Upravit kvíz{% else %}Vytvořit nový kvíz{% endif %}</h1>
+    <p class="text-gray-600 dark:text-gray-400 mt-2">
+      {% if quiz %}Upravte kvíz s otázkami a odpověďmi.{% else %}Vytvořte kvíz s otázkami a odpověďmi najednou.{% endif %} 
+      Můžete přidat více otázek kliknutím na tlačítko "Přidat otázku".
+    </p>
+  </div>
   
-  <form method="post" id="quiz-form" enctype="multipart/form-data" action="{% if quiz %}{% url 'quiz_update' quiz.id %}{% else %}{% url 'quiz_create' %}{% endif %}">
+  <form method="post" id="quiz-form" enctype="multipart/form-data" action="{% if quiz %}{% url 'quiz_update' quiz.id %}{% else %}{% url 'quiz_create' %}{% endif %}" class="space-y-6">
     {% csrf_token %}
     
-    <div class="quiz-title-input-wrapper">
-      <label for="quiz_title" class="quiz-title-label">Název kvízu:</label>
-      <input type="text" id="quiz_title" name="quiz_title" required 
-             placeholder="Např. Matematika - Zlomky" 
-             class="quiz-title-input"
-             value="{{ quiz_title }}">
-    </div>
-    
-    <div class="quiz-title-input-wrapper">
-      <label for="jokers_count" class="quiz-title-label">Počet žolíků za celou hru:</label>
-      <input type="number" id="jokers_count" name="jokers_count" min="0" max="3" value="{{ jokers_count|default:0 }}" required>
-      <p style="font-size: 14px; color: #666; margin-top: 4px;">Počet žolíků, které může každý student použít během celého kvízu (0-3).</p>
+    {# Základní informace o kvízu #}
+    <div class="card-modern space-y-6">
+      <div>
+        <label for="quiz_title" class="label-modern">Název kvízu</label>
+        <input type="text" id="quiz_title" name="quiz_title" required 
+               placeholder="Např. Matematika - Zlomky" 
+               class="input-modern"
+               value="{{ quiz_title }}">
+      </div>
+      
+      <div>
+        <label for="jokers_count" class="label-modern">Počet žolíků za celou hru</label>
+        <input type="number" id="jokers_count" name="jokers_count" min="0" max="3" 
+               value="{{ jokers_count|default:0 }}" required
+               class="input-modern w-32">
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
+          Počet žolíků, které může každý student použít během celého kvízu (0-3).
+        </p>
+      </div>
     </div>
 
-    <div id="questions-container"></div>
+    {# Kontejner pro otázky #}
+    <div id="questions-container" class="space-y-6"></div>
     
     {% if questions_data %}
     <script id="questions-data" type="application/json">{{ questions_data|safe }}</script>
     {% endif %}
     
-    <div class="quiz-form-add-question">
-      <button type="button" id="add-question-btn" class="add-question-btn">+ Přidat otázku</button>
+    {# Tlačítko pro přidání otázky #}
+    <div class="flex justify-center">
+      <button type="button" id="add-question-btn" class="btn-secondary">
+        + Přidat otázku
+      </button>
     </div>
     
-    <div class="quiz-form-actions">
-      <button type="submit" class="quiz-submit-btn">
+    {# Akční tlačítka #}
+    <div class="flex gap-4 justify-end pt-6 border-t border-gray-200 dark:border-gray-700">
+      <a href="{% url 'quiz_list' %}" class="btn-secondary">Zrušit</a>
+      <button type="submit" class="btn-primary">
         {% if quiz %}Uložit změny{% else %}Vytvořit kvíz{% endif %}
       </button>
-      <a href="{% url 'quiz_list' %}" class="quiz-cancel-link">Zrušit</a>
     </div>
   </form>
 </div>
@@ -50,72 +67,102 @@ let questionIndex = 0;
 function addQuestion() {
   const container = document.getElementById('questions-container');
   const questionDiv = document.createElement('div');
-  questionDiv.className = 'question-block';
   questionDiv.dataset.questionIndex = questionIndex;
   
   const currentQIndex = questionIndex;
   questionDiv.innerHTML = `
-    <div class="question-header">
-      <h3>Otázka ${questionIndex + 1}</h3>
-      <button type="button" class="remove-question-btn">Smazat otázku</button>
-    </div>
-    
-    <div class="question-field">
-      <label>Text otázky:</label>
-      <input type="text" name="question_${questionIndex}_text" required placeholder="Zadejte text otázky">
-    </div>
-    
-    <div class="question-field">
-      <label>Obrázek k otázce (volitelné):</label>
-      <input type="file" name="question_${questionIndex}_image" accept="image/*">
-      <p>Zobrazí se u této otázky studentům.</p>
-    </div>
-    
-    <div class="question-field">
-      <label>Čas na odpověď (sekundy):</label>
-      <input type="number" name="question_${questionIndex}_duration" min="5" max="300" value="20" required>
-      <p>Minimálně 5 sekund, maximálně 300 sekund (5 minut).</p>
-    </div>
-    
-    <div class="quiz-form-answers-section">
-      <label class="quiz-form-answers-label">Odpovědi:</label>
-      <div class="answers-container">
-        ${createAnswerHTML(currentQIndex, 0)}${createAnswerHTML(currentQIndex, 1)}${createAnswerHTML(currentQIndex, 2)}${createAnswerHTML(currentQIndex, 3)}
+    <div class="card-modern">
+      <div class="flex justify-between items-center mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
+        <h3 class="text-xl font-bold text-gray-900 dark:text-white">Otázka ${questionIndex + 1}</h3>
+        <button type="button" class="btn-danger text-sm py-2 px-3">Smazat otázku</button>
       </div>
-      <button type="button" class="add-answer-btn">+ Přidat odpověď</button>
+      
+      <div class="space-y-6">
+        <div>
+          <label class="label-modern">Text otázky</label>
+          <input type="text" name="question_${questionIndex}_text" required 
+                 placeholder="Zadejte text otázky" class="input-modern">
+        </div>
+        
+        <div>
+          <label class="label-modern">Obrázek k otázce (volitelné)</label>
+          <input type="file" name="question_${questionIndex}_image" accept="image/*"
+                 class="block w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 dark:file:bg-indigo-900/30 file:text-indigo-700 dark:file:text-indigo-300 hover:file:bg-indigo-100 dark:hover:file:bg-indigo-900/50">
+          <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">Zobrazí se u této otázky studentům.</p>
+        </div>
+        
+        <div>
+          <label class="label-modern">Čas na odpověď (sekundy)</label>
+          <input type="number" name="question_${questionIndex}_duration" min="5" max="300" 
+                 value="20" required class="input-modern w-32">
+          <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">Minimálně 5 sekund, maximálně 300 sekund (5 minut).</p>
+        </div>
+        
+        <div>
+          <label class="label-modern mb-4">Odpovědi</label>
+          <div class="answers-container space-y-3 mb-4">
+            ${createAnswerHTML(currentQIndex, 0)}${createAnswerHTML(currentQIndex, 1)}${createAnswerHTML(currentQIndex, 2)}${createAnswerHTML(currentQIndex, 3)}
+          </div>
+          <button type="button" class="btn-secondary text-sm">+ Přidat odpověď</button>
+        </div>
+      </div>
     </div>
   `;
   
   container.appendChild(questionDiv);
   
-  questionDiv.querySelector('.remove-question-btn').addEventListener('click', () => {
-    questionDiv.remove();
-    updateQuestionNumbers();
-  });
-  questionDiv.querySelector('.add-answer-btn').addEventListener('click', () => {
-    const answersContainer = questionDiv.querySelector('.answers-container');
-    answersContainer.appendChild(createAnswerDiv(currentQIndex, answersContainer.children.length));
-  });
+  const removeBtn = questionDiv.querySelector('button.btn-danger');
+  if (removeBtn) {
+    removeBtn.addEventListener('click', () => {
+      questionDiv.remove();
+      updateQuestionNumbers();
+    });
+  }
+  
+  const addAnswerBtn = questionDiv.querySelector('button.btn-secondary');
+  if (addAnswerBtn) {
+    addAnswerBtn.addEventListener('click', () => {
+      const answersContainer = questionDiv.querySelector('.answers-container');
+      if (answersContainer) {
+        answersContainer.appendChild(createAnswerDiv(currentQIndex, answersContainer.children.length));
+      }
+    });
+  }
   
   questionIndex++;
   return questionDiv;
 }
 
 function createAnswerHTML(questionIdx, answerIdx) {
-  return `<div class="answer-row"><input type="text" name="question_${questionIdx}_answer_${answerIdx}_text" placeholder="Text odpovědi"><label><input type="checkbox" name="question_${questionIdx}_answer_${answerIdx}_correct"><span>Správná</span></label><button type="button" class="remove-answer-btn">×</button></div>`;
+  return `
+    <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
+      <input type="text" name="question_${questionIdx}_answer_${answerIdx}_text" 
+             placeholder="Text odpovědi" class="input-modern flex-1">
+      <label class="flex items-center gap-2 cursor-pointer whitespace-nowrap">
+        <input type="checkbox" name="question_${questionIdx}_answer_${answerIdx}_correct"
+               class="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
+        <span class="text-sm text-gray-700 dark:text-gray-300">Správná</span>
+      </label>
+      <button type="button" class="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 font-bold text-xl px-2">×</button>
+    </div>
+  `;
 }
 
 function createAnswerDiv(questionIdx, answerIdx) {
   const div = document.createElement('div');
-  div.className = 'answer-row';
+  div.className = 'flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600';
   div.innerHTML = createAnswerHTML(questionIdx, answerIdx);
-  div.querySelector('.remove-answer-btn').addEventListener('click', () => div.remove());
+  const removeBtn = div.querySelector('button[type="button"]');
+  if (removeBtn) {
+    removeBtn.addEventListener('click', () => div.remove());
+  }
   return div;
 }
 
 function updateQuestionNumbers() {
-  document.querySelectorAll('.question-block').forEach((q, index) => {
-    q.querySelector('h3').textContent = `Otázka ${index + 1}`;
+  document.querySelectorAll('#questions-container > div').forEach((q, index) => {
+    const h3 = q.querySelector('h3');
+    if (h3) h3.textContent = `Otázka ${index + 1}`;
   });
 }
 

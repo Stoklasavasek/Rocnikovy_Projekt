@@ -1,25 +1,43 @@
 #!/bin/bash
 # Entrypoint skript pro Docker kontejner
 # Spouští Django server a Socket.IO server současně
+# Cross-platform kompatibilní (Mac, Linux, Windows WSL)
 
 set -e  # Ukončit při chybě
+
+# Nastavení UTF-8 pro cross-platform kompatibilitu
+export LANG=C.UTF-8
+export LC_ALL=C.UTF-8
+export PYTHONIOENCODING=utf-8
 
 # Čekání na připojení databáze (pokud je nastavená)
 if [ -n "$DB_HOST" ]; then
     echo "Čekám na připojení databáze..."
+    MAX_RETRIES=30
+    RETRY_COUNT=0
     until python -c "import psycopg2; psycopg2.connect(host='$DB_HOST', port='${DB_PORT:-5432}', user='$DB_USER', password='$DB_PASSWORD', dbname='$DB_NAME')" 2>/dev/null; do
-        echo "Databáze ještě není připravená, čekám..."
+        RETRY_COUNT=$((RETRY_COUNT + 1))
+        if [ $RETRY_COUNT -ge $MAX_RETRIES ]; then
+            echo "❌ Chyba: Databáze není dostupná po $MAX_RETRIES pokusech"
+            exit 1
+        fi
+        echo "Databáze ještě není připravená, čekám... ($RETRY_COUNT/$MAX_RETRIES)"
         sleep 2
     done
-    echo "Databáze je připravená!"
+    echo "✅ Databáze je připravená!"
 fi
 
 # Spuštění migrací databáze
 echo "Spouštím migrace..."
-python manage.py migrate --noinput
+python manage.py migrate --noinput || {
+    echo "⚠️  Varování: Migrace selhaly, pokračuji..."
+}
 
 # Shromáždění statických souborů (CSS, JS, obrázky) do jedné složky
-python manage.py collectstatic --noinput
+echo "Shromažďuji statické soubory..."
+python manage.py collectstatic --noinput --clear || {
+    echo "⚠️  Varování: Collectstatic selhal, pokračuji..."
+}
 
 # Spuštění Django serveru na pozadí (port 8000)
 echo "Spouštím Django server (port 8000)..."

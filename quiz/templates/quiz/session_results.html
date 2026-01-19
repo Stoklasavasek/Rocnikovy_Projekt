@@ -3,13 +3,13 @@
 {# Šablona pro finální výsledky živého sezení - zobrazuje podium a celkový žebříček #}
 
 {% block content %}
-<div class="results-container">
-  <h1>Výsledky: {{ session.quiz.title }} ({{ session.code }})</h1>
+<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-8 text-center">Výsledky: {{ session.quiz.title }} ({{ session.code }})</h1>
   {# Tlačítko pro stažení výsledků do CSV (pouze pro učitele) #}
   {% if is_host %}
-    <p class="results-csv-link">
-      <a href="{% url 'session_results_csv' session.hash %}" class="btn ghost">Stáhnout CSV</a>
-    </p>
+    <div class="flex justify-center mb-8">
+      <a href="{% url 'session_results_csv' session.hash %}" class="btn-secondary px-6 py-3">Stáhnout CSV</a>
+    </div>
   {% endif %}
 
   {% if leaderboard %}
@@ -21,34 +21,36 @@
     </div>
 
     {# Celkový žebříček všech účastníků #}
-    <div class="leaderboard-section">
-      <h2 class="leaderboard-title">Celkový žebříček</h2>
-      <table class="results-table">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Účastník</th>
-            <th>Skóre</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for item in leaderboard %}
-          <tr{% if forloop.counter0 == 0 %} class="correct-answer-row"{% endif %}>
-            <td>{{ forloop.counter }}.</td>
-            <td>{{ item.participant.display_name }}</td>
-            <td>{{ item.score }}</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+    <div class="card-modern mb-8">
+      <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">Celkový žebříček</h2>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-800">
+          <thead style="background: #000000 !important;">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium uppercase" style="color: #ffffff !important; font-weight: 700 !important; background: #000000 !important;">#</th>
+              <th class="px-6 py-3 text-left text-xs font-medium uppercase" style="color: #ffffff !important; font-weight: 700 !important; background: #000000 !important;">Účastník</th>
+              <th class="px-6 py-3 text-left text-xs font-medium uppercase" style="color: #ffffff !important; font-weight: 700 !important; background: #000000 !important;">Skóre</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-800">
+            {% for item in leaderboard %}
+            <tr class="{% if forloop.counter0 == 0 %}bg-yellow-50 dark:bg-yellow-900/20{% else %}hover:bg-gray-100/50 dark:hover:bg-gray-700/50{% endif %} transition-colors">
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{{ forloop.counter }}.</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{{ item.participant.display_name }}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 dark:text-white">{{ item.score }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
     </div>
     
     {# Vzdělávací materiály po kvízu (pouze pro studenty) #}
     {# Poznámka: Zobrazují se pod žebříčkem po skončení celého kvízu #}
     {% if not is_host and educational_materials_after %}
-      <div class="educational-materials card pad my-4">
-        <h2>Vzdělávací materiály</h2>
-        <p class="text-muted">Po skončení kvízu si můžete prostudovat následující materiály:</p>
+      <div class="card-modern mb-8" style="background: #1f2937 !important; border: 2px solid #374151 !important;">
+        <h2 class="text-2xl font-bold mb-4" style="color: #f9fafb !important;">Vzdělávací materiály</h2>
+        <p class="mb-4" style="color: #d1d5db !important;">Po skončení kvízu si můžete prostudovat následující materiály:</p>
         <ul class="material-list">
           {% for material in educational_materials_after %}
             <li class="material-item pad-sm bg-card rounded my-2">

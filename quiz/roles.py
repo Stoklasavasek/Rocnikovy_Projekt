@@ -12,25 +12,11 @@ from django.contrib.auth.models import User
 TEACHER_GROUP = "Teacher"
 
 
+# Kontroluje, jestli je uživatel učitel
 def user_is_teacher(user: User) -> bool:
-    """
-    Zkontroluje, zda je uživatel učitel.
-    
-    Učitel je buď:
-    - člen skupiny "Teacher" (nastaveno v Django adminu), nebo
-    - má příznak is_staff (Django admin přístup - automaticky učitel)
-    
-    Args:
-        user: Django User objekt (může být anonymní)
-        
-    Returns:
-        True pokud je uživatel učitel, jinak False
-        
-    Note:
-        Pro anonymní uživatele vždy vrací False (user.is_authenticated je False).
-    """
+    # Kontrola, zda je přihlášen
     if not user or not user.is_authenticated:
         return False
     
-    # Kontrola členství ve skupině Teacher nebo is_staff
+    # True pokud je v skupině TEACHER_GROUP (skupina učitelů) nebo má is_staff
     return user.groups.filter(name=TEACHER_GROUP).exists() or user.is_staff

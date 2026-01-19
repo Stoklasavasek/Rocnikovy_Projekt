@@ -1,0 +1,86 @@
+.table-header-fix-placeholder {
+  /* Soubor ponechán kvůli referenci v base.html, reálná pravidla jsou v jiných CSS/inline stylech */
+}
+
+/* ===== AGGRESIVE TABLE HEADER FIXES ===== */
+/* VŠECHNY nadpisy tabulek: ČERNÉ POZADÍ, BÍLÝ TEXT */
+
+/* GLOBÁLNÍ PRAVIDLO - nejvyšší priorita */
+html body thead th,
+html body table thead th,
+html body .min-w-full thead th,
+html body table.min-w-full thead th,
+html body thead th[class],
+html body thead th[style],
+html body table thead th[class],
+html body table thead th[style],
+html body .results-table thead th,
+html body table.results-table thead th,
+html body .table-header-row th {
+  background: #000000 !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+}
+
+/* Všechny možné selektory */
+th,
+table th,
+thead th,
+table thead th,
+.min-w-full th,
+.min-w-full thead th,
+table.min-w-full th,
+table.min-w-full thead th,
+.results-table th,
+.results-table thead th,
+table.results-table th,
+table.results-table thead th,
+.table-header-row th {
+  background: #000000 !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+}
+
+/* Přepsání Tailwind tříd */
+thead th,
+thead th.text-gray-500,
+thead th.text-gray-300,
+thead th.text-gray-700,
+thead th.text-gray-200,
+thead th.dark\:text-gray-200,
+thead th.dark\:text-gray-300 {
+  background: #000000 !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+}
+
+/* Přepsání pro všechny kombinace s bg-gray */
+.bg-gray-100\/50 th,
+.bg-gray-100 th,
+.bg-gray-700\/50 th,
+.bg-gray-700 th,
+.backdrop-blur-sm th {
+  background: #000000 !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+}
+
+/* Speciální třída */
+.table-header-fix {
+  background: #000000 !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+}
+
+/* Tmavý režim - stejné barvy */
+.dark thead th,
+.dark table thead th,
+.dark .min-w-full thead th,
+.dark table.min-w-full thead th,
+.dark .results-table thead th,
+.dark table.results-table thead th,
+.dark .table-header-row th {
+  background: #000000 !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+}

@@ -1,0 +1,53 @@
+# .dockerignore - optimalizace Docker buildu (DRY princip)
+# Ignoruje soubory, které nejsou potřeba v Docker image
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environment
+.venv/
+venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Data (ne kopírovat do image, použije se volume)
+data/
+media/
+static/
+
+# Documentation
+dokumentace/
+*.md
+*.tex
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.bak
+
