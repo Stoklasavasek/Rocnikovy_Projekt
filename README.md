@@ -1,41 +1,74 @@
-QuizIT!
-– Django + Wagtail + Docker
+# 🎓 QuizIT!
 
-📺 Videoprezentace: [YouTube video k projektu](https://www.youtube.com/watch?v=_vaSvGkfJBQ)
+**QuizIT!** je webová aplikace pro tvorbu a hraní **interaktivních kvízů v reálném čase**, inspirovaná nástroji jako Kahoot.  
+Je určená především pro školy – učitelé vytvářejí kvízy, studenti se připojují pomocí kódu a odpovídají v reálném čase.
 
-Webová aplikace pro interaktivní kvízy ve stylu Kahoot pro školy.
-Učitel vytváří kvízy, otázky a odpovědi, studenti se připojují kódem a odpovídají v reálném čase. Výsledky vidí jak studenti, tak učitel (průběžné i finální hodnocení).
+📺 **Videoprezentace projektu:**  
+👉 https://www.youtube.com/watch?v=_vaSvGkfJBQ
 
-Hlavní funkce
+---
 
-Živé kvízy – učitel spouští kvíz v reálném čase, studenti se připojují pomocí kódu
+## 🚀 Hlavní funkce
 
-Bodování podle rychlosti – rychlejší správné odpovědi získávají více bodů (1000-400 bodů)
+### 🧑‍🏫 Pro učitele
+- **Živé kvízy** – spuštění kvízu v reálném čase
+- **Správa obsahu** – tvorba kvízů, otázek a odpovědí přes Wagtail CMS
+- **Nastavitelný čas** – 5–300 sekund na otázku
+- **Průběžný žebříček** – sledování pořadí účastníků během hry
+- **Export výsledků** – stažení výsledků do CSV
+- **Přehledné statistiky** – průběžné i finální vyhodnocení
 
-Žolíky – studenti mohou použít žolíky (0-3 za hru), které smažou 2 špatné odpovědi
+### 👨‍🎓 Pro studenty
+- **Připojení pomocí kódu**
+- **Bodování podle rychlosti odpovědi**  
+  *(správná odpověď = 400–1000 bodů)*
+- **Žolíky** – možnost smazat 2 špatné odpovědi (0–3 za hru)
+- **Okamžitá zpětná vazba** a přehled výsledků
 
-Nastavitelný čas – učitel může nastavit čas na odpověď pro každou otázku (5-300 sekund)
+---
 
-Průběžný žebříček – učitel vidí průběžné pořadí účastníků během kvízu
+## ⚡ Real-time funkce
+- Aktualizace otázek, odpovědí, skóre a statistik **v reálném čase**
+- Komunikace mezi klienty a serverem pomocí **Socket.IO**
+- Samostatný Socket.IO server běžící v Dockeru
 
-Real-time aktualizace – statistiky a výsledky se aktualizují v reálném čase pomocí Socket.IO
+---
 
-Export výsledků – učitel může stáhnout výsledky do CSV
+## 🛠 Použité technologie
 
-Použité technologie
+### Backend
+- **Django 4.2**
+- **Wagtail 7** (CMS)
+- **PostgreSQL** (běžící v Dockeru)
+- **django-allauth** (autentizace)
 
-Backend: Django 4.2
+### Real-time komunikace
+- **python-socketio**
+- **Socket.IO server** (Docker, port `8001`)
 
-CMS: Wagtail 7
+### Frontend
+- **Django templates**
+- **Tailwind CSS** (styling a responzivní layout)
+- Vlastní úpravy stylů (`kahootapp/static/css/`)
 
-Databáze: PostgreSQL (v Dockeru)
+### Dev & nástroje
+- **Docker & Docker Compose**
+- **django-extensions**
+- **Graphviz** – generování modelového diagramu
 
-Autentizace: django-allauth
+---
 
-Real-time: python-socketio + samostatný Socket.IO server (v Dockeru, port 8001)
+## 🧩 Architektura
+- Backend + CMS běží v Django aplikaci
+- Samostatný Socket.IO server pro real-time komunikaci
+- Databáze PostgreSQL v Docker kontejneru
 
-Front-end: Django šablony + vlastní CSS (kahootapp/static/css/kahootapp.css)
+📊 **Modelový diagram databáze:**  
+`media/quiz_models.png`
 
-Název aplikace: QuizIT!
+---
 
-Modelový diagram: django-extensions + Graphviz (media/quiz_models.png)
+## ▶️ Spuštění projektu (lokálně)
+
+```bash
+docker-compose up --build
